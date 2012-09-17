@@ -7,7 +7,7 @@
 		<property name="track" type="text"/>
 		<property name="command" type="text"/>
 		<property name="error" type="text"/>
-		<property name="user" type="text"/>
+		<property name="d_user" type="text"/>
 	</class>
 </hibernate-mapping>
 

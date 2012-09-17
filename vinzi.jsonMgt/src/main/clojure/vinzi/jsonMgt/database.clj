@@ -1,7 +1,10 @@
 (ns vinzi.jsonMgt.database
-  (:use [vinzi jsonZip jsonDiff jsonEdit genCda]
-	[vinzi.jsonMgt globals]
-	[clojure.pprint])
+  (:use ;;[vinzi jsonZip jsonDiff jsonEdit]
+    [vinzi.jsonZip :only [isJson?]]
+        [vinzi.jsonDiff :only [getPathList keywordize getPathStrPatch]]
+        ;;:only [Patch]
+        [vinzi.jsonMgt globals]
+        [clojure.pprint])
   (:require  [vinzi.jsonMgt [persistentstore :as ps]]
 	     [clojure.java
  	      [jdbc :as sql]]
@@ -190,19 +193,19 @@
 		  ;; (println " TEST apply: " (apply str tableName tableSpecs))
 		  ;; (flush)
 		  (apply sql/create-table tableName tableSpecs)
-		  (writeActionEntry (format "Created table '%s'" tableName) dt))
+		  (writeActionEntry "--general--" dt (format "Created table '%s'" tableName)))
 		false)))
 	  ]
 ;    (println (format "\nChecking whether scheme '%s' is initialized." (:db_scheme dbs)))
   (if (and (checkTable (getActionLogDb)
 		       [:id    (str (:autokey dbs) (:primary dbs))]
 		       [:datetime  (:datetime dbs)]
-		       [:user  (:text dbs)]
+		       [:d_user  (:text dbs)]
 		       [:action (:text dbs)])
 	   (checkTable  (getErrorLogDb)
 			[:id    (str (:autokey dbs) (:primary dbs))]
 			  [:datetime  (:datetime dbs)]
-			  [:user  (:text dbs)]
+			  [:d_user  (:text dbs)]
 			  [:command  (:text dbs)]
 			  [:track  (:text dbs)]
 			  [:error (:text dbs)])

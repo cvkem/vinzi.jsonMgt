@@ -6,7 +6,7 @@
 		<property name="datetime" type="timestamp"/>
 		<property name="track" type="text"/>
 		<property name="action" type="text"/>
-		<property name="user" type="text"/>
+		<property name="d_user" type="text"/>
 	</class>
 </hibernate-mapping>
 

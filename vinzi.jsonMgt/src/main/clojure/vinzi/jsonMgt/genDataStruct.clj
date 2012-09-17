@@ -16,7 +16,7 @@
     [:track      "String"]
     [:command    "String"]
     [:error      "String"]
-    [:user       "String"]
+    [:d_user       "String"]
     ])
 
   (println "generating a file for the action-entries")
@@ -25,7 +25,7 @@
    [["datetime"   "java.util.Date"]
     [:track      "String"]
     ["action"     "String"]
-    ["user"       "String"]
+    ["d_user"       "String"]
     ])
 
   (println "generating a file for the Track-entry")

@@ -21,22 +21,22 @@ public class actionEntry {
     public void setAction(String action)  {this.action = action; };
 
 
-    public String user;
-    public String getUser() { return user;}
-    public void setUser(String user)  {this.user = user; };
+    public String d_user;
+    public String getD_user() { return d_user;}
+    public void setD_user(String d_user)  {this.d_user = d_user; };
 
 
     public actionEntry() {};
 
-    public actionEntry(Long id, java.util.Date datetime, String track, String action, String user) {
+    public actionEntry(Long id, java.util.Date datetime, String track, String action, String d_user) {
 	this.id = id;
 	this.datetime = datetime;
 	this.track = track;
 	this.action = action;
-	this.user = user;
+	this.d_user = d_user;
 	return;};
 
    public String toString() {
-        return " id=" + this.id + " datetime=" + this.datetime + " track=" + this.track + " action=" + this.action + " user=" + this.user;};
+        return " id=" + this.id + " datetime=" + this.datetime + " track=" + this.track + " action=" + this.action + " d_user=" + this.d_user;};
 
 };

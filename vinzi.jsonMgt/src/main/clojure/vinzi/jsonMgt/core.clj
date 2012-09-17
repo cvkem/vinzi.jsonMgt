@@ -1,16 +1,16 @@
 (ns vinzi.jsonMgt.core
   (:use [vinzi.jsonMgt globals persistentstore init-persistentstore]
-	 [vinzi jsonZip jsonDiff jsonEdit genCda]
+        [vinzi jsonZip jsonDiff jsonEdit]
 	 [clojure.pprint])
-;;  (:require [vinzi.jsonMgt [database :as dbps]])
   (:require  [clojure
 	      ;; zip only for debugging
 	      [zip :as zip]
 	      ;;
 	      [string :as str :only [lowercase replace replace-re trim]]]
 	     [clojure.java.io :as jio :only [resource]]
-	     [clojure.data [json :as json]]
-	     [clojure.java.io :as io :only [reader]])
+	     [clojure.data.json :as json]
+	     [clojure.java.io :as io]
+      [vinzi.pentaho.genCda :as cda])
   (:import [java.sql SQLException]
 	   [vinzi.jsonDiff Patch]
 	   [java.io File BufferedReader]))
@@ -366,7 +366,7 @@
   {:pre [(map? trackInfo) (isJson? contents)]}
   (let [{filename :file_location} trackInfo
 	filename (extendFSPath filename)
-	cda      (generateCda (jsonZipper obj))
+	cda      (cda/generateCda (jsonZipper obj))
 	cdaFile  (deriveCdaFilename filename)]
 					;	(str (apply str (take (- (count filename) 5) filename)) "cda")]
     (spit filename contents)

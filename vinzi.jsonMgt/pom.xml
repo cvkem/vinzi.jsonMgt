@@ -146,11 +146,6 @@
 			<version>0.2.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>gencda</groupId>
-			<artifactId>gencda</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-		<dependency>
 			<groupId>hib-connect</groupId>
 			<artifactId>hib-connect</artifactId>
 			<version>0.8.0</version>
