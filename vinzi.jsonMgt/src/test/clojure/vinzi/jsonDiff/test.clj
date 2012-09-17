@@ -525,7 +525,7 @@
 
 (def mod6d (jsonZipper []))
 
-(def patch6d [(Patch. ["/"] actDelete "[1]" nil)
+(def patch6d [(Patch. ["/"] actDelete "[0]" nil)
 	      (Patch. ["/"] actDelete "[0]" nil)])
 
 (def msg6d "delete all fields of vector")
@@ -538,17 +538,24 @@
 
 (def mod6e (jsonZipper [1 5]))
 
+;(def patch6e [(Patch. ["/"] actDelete "[1]" nil)
+;	      (Patch. ["/"] actDelete "[2]" nil)
+;	      (Patch. ["/"] actDelete "[3]" nil)])
+
 (def patch6e [(Patch. ["/"] actDelete "[1]" nil)
-	      (Patch. ["/"] actDelete "[2]" nil)
-	      (Patch. ["/"] actDelete "[3]" nil)])
+	      (Patch. ["/"] actDelete "[1]" nil)
+	      (Patch. ["/"] actDelete "[1]" nil)])
 
 (def msg6e "delete fields at position 2-4")
 
 
 (def mod6f (jsonZipper [1 3 5]))
 
+
+;(def patch6f [(Patch. ["/"] actDelete "[1]" nil)
+;	      (Patch. ["/"] actDelete "[3]" nil)])
 (def patch6f [(Patch. ["/"] actDelete "[1]" nil)
-	      (Patch. ["/"] actDelete "[3]" nil)])
+	      (Patch. ["/"] actDelete "[2]" nil)])
 
 (def msg6f "delete fields at position 2 and 4")
 
@@ -560,6 +567,35 @@
 
 (def msg6g "delete fields at position 2-4 and modified position 3")
 
+(def mod6i (jsonZipper ["changed" 3 4 5]))
+
+(def patch6i [(Patch. ["/"] actChange "[0]" "changed")
+	      (Patch. ["/"] actDelete "[1]"  nil)])
+
+(def msg6i "delete field at position 1 and modified position 0")
+
+(def mod6j (jsonZipper ["changed" 2 4 5]))
+
+(def patch6j [(Patch. ["/"] actChange "[0]" "changed")
+	      (Patch. ["/"] actDelete "[2]"  nil)])
+
+(def msg6j "delete field at position 2 and modified position 0")
+
+
+(def mod6k (jsonZipper [1 2 4 "changed"]))
+
+(def patch6k [(Patch. ["/"] actDelete "[2]"  nil)
+              (Patch. ["/"] actChange "[3]" "changed")])
+
+(def msg6k "delete field at position 2 and modified position 4 (--> 3)")
+
+(def mod6l (jsonZipper [2 3 4 "changed"]))
+
+(def patch6l [(Patch. ["/"] actDelete "[0]"  nil)
+              (Patch. ["/"] actChange "[3]" "changed")])
+
+(def msg6l "delete field at position  modified position 4 (--> 3)")
+
 (deftest test6 ;; 
   (discoverTest patch6a org6abcd mod6a  msg6a)
   (discoverTest patch6b org6abcd mod6b  msg6b)
@@ -568,6 +604,10 @@
   (discoverTest patch6e org6efg mod6e  msg6e)
   (discoverTest patch6f org6efg mod6f  msg6f)
   (discoverTest patch6g org6efg mod6g  msg6g)
+  (discoverTest patch6i org6efg mod6i  msg6i)
+  (discoverTest patch6j org6efg mod6j  msg6j)
+  (discoverTest patch6k org6efg mod6k  msg6k)
+  (discoverTest patch6l org6efg mod6l  msg6l)
   )
 
 (deftest test6reverse ;; 
@@ -578,7 +618,11 @@
   (applyTest patch6e org6efg mod6e  msg6e)
   (applyTest patch6f org6efg mod6f  msg6f)
   (applyTest patch6g org6efg mod6g  msg6g)
-  )
+  (applyTest patch6i org6efg mod6i  msg6i)
+  (applyTest patch6j org6efg mod6j  msg6j)
+  (applyTest patch6k org6efg mod6k  msg6k)
+  (applyTest patch6l org6efg mod6l  msg6l)
+)
 
 
 

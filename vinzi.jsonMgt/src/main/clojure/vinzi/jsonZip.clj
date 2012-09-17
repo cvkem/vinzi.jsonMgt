@@ -270,28 +270,28 @@ The (original) key is stored in the metadata with key-label :json/key. The key :
      {:pre [(not (nil? zipper)) (isZipper? zipper)]}
      (pprintJsonSubZipper zipper "R"))
   ([zipper prefix]
-     (let [numChild (if (zip/branch? zipper)
-		      (count (zip/children zipper)) -1)
-	   node    (zip/node zipper)
-	   metaData (meta node)
-	   base     (if (map? node)
-		      (dissoc node :jsonChildren)
-		      (if (isBoxed? node)
-			(first node)
-			node))
-	   kv (if (map? node) (interleave (keys base) (map meta (vals base))) nil)
-	   ]
-       (print prefix " BASE: ")
-       (pprint base)
-       (print prefix " WITH META: ")
-       (pprint metaData)
-       (when kv
-	 (println prefix "... AND KEY META: " kv))
-       (when (>= numChild 0)
-	 (println prefix " NOW processing the " numChild " children")
+    (let [numChild (if (zip/branch? zipper)
+                     (count (zip/children zipper)) -1)
+          node    (zip/node zipper)
+          metaData (meta node)
+          base     (if (map? node)
+                     (dissoc node :jsonChildren)
+                     (if (isBoxed? node)
+                       (first node)
+                       node))
+          kv (if (map? node) (interleave (keys base) (map meta (vals base))) nil)
+          ]
+      (print prefix " BASE: ")
+      (pprint base)
+      (print prefix " WITH META: ")
+      (pprint metaData)
+      (when kv
+        (println prefix "... AND KEY META: " kv))
+      (when (>= numChild 0)
+        (println prefix " NOW processing the " numChild " children")
 	 (flush)
 	 (loop [nr 1
-		child (zip/down zipper)]
+         child (zip/down zipper)]
 	   (when child
 	     (pprintJsonSubZipper child (str prefix "." nr))
 	     (recur (inc nr) (zip/right child))))
@@ -311,55 +311,55 @@ The (original) key is stored in the metadata with key-label :json/key. The key :
   [zipper]
   {:pre [(not (nil? zipper)) (isZipper? zipper)]}
   (let [generatePath (fn [node pPath]
-		       ;; generate a path for the current 'node' using 'pPath' as prefix
-		       (let [meta (meta node)
-			     t  (:json/type meta)
-			     cnt (count (:jsonChildren node))]
-			 (if (= t jsonTypeVector)
-;;			   (format "%s/[%s]" pPath cnt)
-			   (format "%s/[*]" pPath cnt)
-			   (if (= t jsonTypeMap)
-			     (let [k  (filter #(not= :jsonChildren %) (keys node))
-				   k  (apply str (interpose "," (map str k)))
-				   mk (:json/key meta)
-				   cnt (count (:jsonChildren node))]
-			       (format "%s/%s{%s|%s}" pPath mk k cnt))
-			     (format "%s(%s)" pPath t)))))
-	addPath  (fn [path cumm]
-		       (let [cnt (cumm path)
-			     cnt (if cnt (inc cnt) 1)]
-			   (assoc cumm path cnt)))
-	findPaths (fn findPaths [loc pPath cumm]
-		    ;; find all paths in zipper 'loc' where
-		    ;; 'pPath' is path to parent
-		    ;; and 'cumm' contains the discoverd paths
-		    ;; (in this map the keys are path-strings
-		    ;;  and values are number of time this path is used).
-		    (let [node (zip/node loc)
-			  path (generatePath node pPath)
-			  cumm (addPath path cumm)]
-		      (loop [child (zip/down loc)
-			     cumm  cumm]
-			(if child
-			  (recur (zip/right child) (findPaths child path cumm))
-			  cumm))))
-	showPaths (fn [res]
-		    ;; print the results to the standard output
-		    (let [smap (into (sorted-map) res)]
-		      (println "The map contains the following paths (count  path)")
-		      ;;		      (doseq [p smap] (println (format "%s   %s"  (val p) (key p)))))) ]
-		      (loop [nr 1
-			     ks (keys smap)
-			     vs (vals smap)]
-			(when (seq ks)
-			  (println (format "%s   %s x %s" nr  (first vs) (first ks)))
-			  (recur (inc nr) (rest ks) (rest vs)))))) ]
+                       ;; generate a path for the current 'node' using 'pPath' as prefix
+                       (let [meta (meta node)
+                             t  (:json/type meta)
+                             cnt (count (:jsonChildren node))]
+                         (if (= t jsonTypeVector)
+                           ;;			   (format "%s/[%s]" pPath cnt)
+                           (format "%s/[*]" pPath cnt)
+                           (if (= t jsonTypeMap)
+                             (let [k  (filter #(not= :jsonChildren %) (keys node))
+                                   k  (apply str (interpose "," (map str k)))
+                                   mk (:json/key meta)
+                                   cnt (count (:jsonChildren node))]
+                               (format "%s/%s{%s|%s}" pPath mk k cnt))
+                             (format "%s(%s)" pPath t)))))
+        addPath  (fn [path cumm]
+                   (let [cnt (cumm path)
+                         cnt (if cnt (inc cnt) 1)]
+                     (assoc cumm path cnt)))
+        findPaths (fn findPaths [loc pPath cumm]
+                    ;; find all paths in zipper 'loc' where
+                    ;; 'pPath' is path to parent
+                    ;; and 'cumm' contains the discoverd paths
+                    ;; (in this map the keys are path-strings
+                    ;;  and values are number of time this path is used).
+                    (let [node (zip/node loc)
+                          path (generatePath node pPath)
+                          cumm (addPath path cumm)]
+                      (loop [child (zip/down loc)
+                             cumm  cumm]
+                        (if child
+                          (recur (zip/right child) (findPaths child path cumm))
+                          cumm))))
+        showPaths (fn [res]
+                    ;; print the results to the standard output
+                    (let [smap (into (sorted-map) res)]
+                      (println "The map contains the following paths (count  path)")
+                      ;;		      (doseq [p smap] (println (format "%s   %s"  (val p) (key p)))))) ]
+                      (loop [nr 1
+                             ks (keys smap)
+                             vs (vals smap)]
+                        (when (seq ks)
+                          (println (format "%s   %s x %s" nr  (first vs) (first ks)))
+                          (recur (inc nr) (rest ks) (rest vs)))))) ]
     (println "NOTE: in a json-zipper the basic values are one level"
-	     " higher up in the hierarchy than the compound values")
+             " higher up in the hierarchy than the compound values")
     (-> zipper
-	(zipTop)
-	(findPaths "" {})
-	(showPaths))))
+      (zipTop)
+      (findPaths "" {})
+      (showPaths))))
 
 
 
@@ -393,7 +393,7 @@ The (original) key is stored in the metadata with key-label :json/key. The key :
   ;; translate a key to an integer if it is a vector-key ("[n]")
   [key]
   (if (and (not= (type key) (type :a)) 
-	   (= (first key) \[))
+           (= (first key) \[))
     (Integer/parseInt (subs key 1 (dec (count key))))
     key))
 
@@ -408,24 +408,24 @@ The (original) key is stored in the metadata with key-label :json/key. The key :
 This function is only used for compound elements (collections) that will be inserted in a hashmap. If necessary the element will be boxed (put in a list) in order to allow attachement of metadata."
   ([key element]  (setJsonKey key nil element))
   ([key status element]
-     (let [isIObj    (fn [o]
-		       (contains? (parents (class o)) clojure.lang.IObj))
-	   element   (if (isIObj element)
-		       element
-		       (with-meta (list element) {:json/boxed true}))
-	   keyMeta   (if status
-		       {:json/key key
-			:json/status status}
-		       {:json/key key})
-	   typeMeta  (cond
-		      (map? element) {:json/type jsonTypeMap}
-		      (vector? element) {:json/type jsonTypeVector}
-		      (list? element) {}    ;; boxed-element does not have :json/type 
-		      :else (println "ERROR (setJsonKey only supports map or vector) passed: (" element ")"))
-	   elemMeta  (meta element)
-	   metaData  (into keyMeta typeMeta)
-	   metaData  (if elemMeta  (into elemMeta metaData) metaData)]  ;; keyMeta and typeMeta should override elemMeta 
-       (with-meta element metaData))))
+    (let [isIObj    (fn [o]
+                      (contains? (parents (class o)) clojure.lang.IObj))
+          element   (if (isIObj element)
+                      element
+                      (with-meta (list element) {:json/boxed true}))
+          keyMeta   (if status
+                      {:json/key key
+                       :json/status status}
+                      {:json/key key})
+          typeMeta  (cond
+                      (map? element) {:json/type jsonTypeMap}
+                      (vector? element) {:json/type jsonTypeVector}
+                      (list? element) {}    ;; boxed-element does not have :json/type 
+                      :else (println "ERROR (setJsonKey only supports map or vector) passed: (" element ")"))
+          elemMeta  (meta element)
+          metaData  (into keyMeta typeMeta)
+          metaData  (if elemMeta  (into elemMeta metaData) metaData)]  ;; keyMeta and typeMeta should override elemMeta 
+      (with-meta element metaData))))
 
 (defn jsonStatus
   "Return the status of the current node in the json-zipperTree"
@@ -523,91 +523,142 @@ This function is only used for compound elements (collections) that will be inse
       z   ;; arrived at location (or nil)
       (recur (findChildWithKey z k) ks))))
 
+
+(defn renumber-vector-rights
+  "Renumber all vectors to the right of current loc (assuming this is a vector)."
+  [loc]
+  (let [numDel         1      ;; constant to let next code be unmodified.  (refactor it to remove duplication)
+        translateKey (fn [key]    ;; translateKey taken from jsonDiff
+                       (when key
+                         (str "[" (- (Integer/parseInt
+                                       (subs key 1 (dec (count key)))) numDel) "]")))
+        adjust-index-loc      (fn [loc]  ;; put a key on the meta-data that is one less
+                                (let [node (zip/node loc)
+                                      k    (:json/key (meta node))
+                                      _    (do (println "node: " node " has key " k) (flush)) 
+                                      _    (assert (and (= (first k) \[) (= (last k) \])))
+                                      newK (translateKey k)
+                                      node (with-meta node (into (meta node) {:json/key newK}))
+                                      res (zip/replace loc node)]
+                                  (println "result when replacing key " k " is " (jsonRoot res))
+                                  res))]
+    (let [loc (adjust-index-loc loc)]
+      (if-let [nLoc (zip/right loc)]
+        (zip/left (renumber-vector-rights nLoc)) ;; adjust and move back
+        loc))))
+
+
+
 (defn processCompoundOper
-  "Process an operation 'oper' for a compound object with key 'key' that is a direct child of 'loc'."
-  [loc key oper & args]
+  "Process an operation 'oper' for a compound object with key 'key' that is a direct child of 'loc'.
+   Currently only used by removeItem. "
+  [closeGaps loc key oper & args]
   (if-let [newLoc (findChildWithKey loc key)]
-    (let [arguments (if args
-		      (concat (list newLoc) args)
-		      (list newLoc))]
+    (let [newLoc (if (and closeGaps (= (jsonType loc) jsonTypeVector) (= oper zip/remove))
+                   (renumber-vector-rights newLoc)
+                   newLoc)
+          arguments (if args
+                      (concat (list newLoc) args)
+                      (list newLoc))]
       (apply oper arguments))
-    nil)) ;; failed
+    (do
+      (println "find child with key: " key "  failed")
+      nil))) ;; failed
+
+
+(defn removeItem
+  "Removes a key field from zipper 'loc' at location 'pathlist'/'key'. Key can refer to a child, or to a basic element of a map.
+   By default close-gaps is true. Only replace (does a remove followed by insert uses 'false on closeGaps."
+  ([loc pathList key] (removeItem loc pathList key true))
+  ([loc pathList key closeGaps]
+  (if-let [newLoc (zip_dbgmr "parent: " (zipLoc loc pathList))]
+    (if (zip_dbgmr "map?: " (= (jsonType newLoc) jsonTypeMap))
+      (let [node (zip/node newLoc)]
+        (println "removeItem: arrived at node: " (zip/node node))
+        (if (get node key)
+          ;; key is a basic map-key (otherwise compound key(-field))
+          (zip_dbgmr "result (replace basic map-key): " (zip/replace newLoc (dissoc node key)))
+          ;; key is a special key (vector key). Why didn't I check jsonType to discover the kind of key?
+          (zip_dbgmr "result (replace compound key): " (processCompoundOper closeGaps newLoc key zip/remove))))
+      (zip_dbgmr "res=non-map item" (processCompoundOper closeGaps newLoc key zip/remove)))
+    (do
+      (println "removeItem: " pathList " could not be found. " (jsonRoot loc))
+      nil)))) ;; failed
+
+
+
 
 (defn keyExistsAt
   "Checks whether a key exists at location 'loc' (either hash-key or child key). This function checks for the keywordized and string version of key."
   [loc key]
   (let [node (zip/node loc)
-	keywordComplement (fn [id]
-			    ;; the keywordComplement of id ':name' is
-			    ;; 'name' and vice versa.
-			    (if (keyword? id) (name id) (keyword id)))
-	keyExistsAux  (fn [loc key]
-		       ;; check whether key exists
-		       (or (get node key)
-			   (findChildWithKey loc key false))) ]  ;; find child without reporting error on fail.
+        keywordComplement (fn [id]
+                            ;; the keywordComplement of id ':name' is
+                            ;; 'name' and vice versa.
+                            (if (keyword? id) (name id) (keyword id)))
+        keyExistsAux  (fn [loc key]
+                        ;; check whether key exists
+                        (or (get node key)
+                            (findChildWithKey loc key false))) ]  ;; find child without reporting error on fail.
     (let [res (if (keyExistsAux loc key)
-		true ;; key exists
-		(keyExistsAux loc (keywordComplement key)))]
+                true ;; key exists
+                (keyExistsAux loc (keywordComplement key)))]
 ;      (println "RETURN VALUE of keyExists at for " key ": "  res)
       res)))
 
-(defn removeItem
-  "Removes a key field from zipper 'loc' at location 'pathlist'/'key'. Key can refer to a child, or to a basic element of a map."
-  [loc pathList key]
-  (if-let [newLoc (zip_dbgmr "parent: " (zipLoc loc pathList))]
-    (if (zip_dbgmr "map?: " (= (jsonType newLoc) jsonTypeMap))
-      (let [node (zip/node newLoc)]
-	(if (get node key)
-	  ;; key is a basic key (otherwise compound key(-field))
-	    (zip_dbgmr "result (replace basic map-key): " (zip/replace newLoc (dissoc node key)))
-	    (zip_dbgmr "result (replace compound key): " (processCompoundOper newLoc key zip/remove))))
-	(zip_dbgmr "res=non-map item" (processCompoundOper newLoc key zip/remove)))
-    nil)) ;; failed
+
 
 (defn- insertItemAux
-  "Internal function used by insertItem and replaceItem."
+  "Internal function used by insertItem and replaceItem.
+  (See replaceItem for a simplified version.)"
   [loc pathList key status json]
   (if-let [newLoc (zip_dbgmi "parentLoc" (zipLoc loc pathList))]
     (let [vectId (getVectId newLoc)
-	  vectKey (if (and vectId (coll? json))
-		    (json vectId) nil)
-	  _    (when (and vectKey (not= vectKey key))
-		 (zipErr (format
-			    "vector uses field '%s' as id. Key  '%s' replaced by '%s'"
-			    vectId key vectKey)))
-	  key (if vectKey  vectKey key)
-	  metadata (if status
-		     {:json/key key
-		      :json/status status}
-		     {:json/key key})
-	  ]
+          vectKey (if (and vectId (coll? json))
+                    (json vectId) nil)
+          _    (when (and vectKey (not= vectKey key))
+                 (zipErr (format
+                           "vector uses field '%s' as id. Key  '%s' replaced by '%s'"
+                           vectId key vectKey)))
+          key (if vectKey  vectKey key)
+          metadata (if status
+                     {:json/key key
+                      :json/status status}
+                     {:json/key key})
+          ]
       (if (keyExistsAt newLoc key)
-	(zip_dbgmi (str  key " exists?:) ") (zipErr (str "node with key " key " exists. Insert failed")))
-	(let [;;_     (do (println "The JSON is: ") (pprint json) )
-	      item  (jsonToZippertree json metadata '("---"))
-	      ;; _     (let [tmp (jsonZipper {})          
-	      ;; 		  tmp (zip/replace tmp item)]
-	      ;; 	      (pprintJsonZipper tmp)
-	      ;; 	      (println "... of met print " item))
-	       show  (fn [msg z]
-	      ;; 	      (println "The result for " msg)
-	      ;; 	      (pprintJsonZipper z)
-	       	      z)
-	      node  (zip/node newLoc)]
-	  (if (coll? json)
-	    (if (zip_dbgmi "map has children" (zip/branch? newLoc))
-	      ;; add compound type as an additional child
-	      (zip_dbgmi "res=add compound" (show "compound child" (zip/append-child newLoc item)))
-	      ;; loc has no children yet (so replace full tree)
-	      (let [_       (assert (= (:jsonChildren node) nil))
-		    newNode (assoc node :jsonChildren []) ;; add empty list of children
-		    nLoc  (zip/replace newLoc newNode) ]  
-		(zip_dbgmi "res=insert first-child" (show "compound first Child" (zip/append-child nLoc item)))))
-	    ;; it is a basic type
-	    (if (= (jsonType newLoc) jsonTypeMap)
-	      (zip_dbgmi "res=basic type in map: " (show "basic in map" (zip/replace newLoc (assoc node key item))))
-	      ;; append item to vector
-	      (zip_dbgmi "res=basic type on non-map" (show "basic in vector" (zip/append-child newLoc item))))))))
+        (zip_dbgmi (str  key " exists?:) ") (zipErr (str "node with key " key " exists. Insert failed")))
+        (let [;;_     (do (println "The JSON is: ") (pprint json) )
+              item  (jsonToZippertree json metadata '("---"))
+              ;; _     (let [tmp (jsonZipper {})          
+              ;; 		  tmp (zip/replace tmp item)]
+              ;; 	      (pprintJsonZipper tmp)
+              ;; 	      (println "... of met print " item))
+              show  (fn [msg z]
+                      ;; 	      (println "The result for " msg)
+                      ;; 	      (pprintJsonZipper z)
+                      z)
+              node  (zip/node newLoc)]
+          (if (coll? json)
+            (if (zip_dbgmi "map has children" (zip/branch? newLoc))
+              ;; add compound type as an additional child
+              (zip_dbgmi "res=add compound" (show "compound child" (zip/append-child newLoc item)))
+              ;; loc has no children yet (so replace full tree)
+              (let [_       (assert (= (:jsonChildren node) nil))
+                    newNode (assoc node :jsonChildren []) ;; add empty list of children
+                    nLoc  (zip/replace newLoc newNode) ]  
+                (zip_dbgmi "res=insert first-child" (show "compound first Child" (zip/append-child nLoc item)))))
+            ;; it is a basic type
+            (if (= (jsonType newLoc) jsonTypeMap)
+              (zip_dbgmi "res=basic type in map: " (show "basic in map" (zip/replace newLoc (assoc node key item))))
+              ;; append item to vector (insert-child for key [0] and insert-right for other keys.
+              (if (= (getKey key) 0)
+                (zip_dbgmi "res=basic type on non-map" (show "basic in vector" (zip/insert-child newLoc item)))
+                (let [predKey (str "[" (dec (getKey key)) "]")
+                      _  (println " key = " key " predKey  = " predKey)
+                      pred (findChildWithKey newLoc predKey)]
+                  (println "pred=" (zip/node pred) " has meta= " (meta (zip/node pred)))
+                  (zip/insert-right pred item))))))))
     nil))  ;; search failed, so return nil
 
 ;; OLD version
@@ -637,7 +688,8 @@ This function is only used for compound elements (collections) that will be inse
     ;; nil))  ;; search failed, so return nil
 
 (defn insertItem
-  "Insert a field in zipper 'loc' at location 'pathlist'/'key' with contents given by 'json'. This function differentiates between simple and compound values (Compound values will be added as a child)."
+  "Insert a field in zipper 'loc' at location 'pathlist'/'key' with contents given by 'json'. 
+  This function differentiates between simple and compound values (Compound values will be added as a child)."
   [loc pathList key json]
   (insertItemAux loc pathList key :insert json))
 
@@ -645,14 +697,42 @@ This function is only used for compound elements (collections) that will be inse
 (defn zipReplace [z]
   (println "Replace needs to be investigated to see whether it preserves keys"))
 
+
+;; OLD code: does append instead of replace at same location
 (defn replaceItem
-  "Insert a field in zipper 'loc' at location 'pathlist'/'key' with contents given by 'json'. This function differentiates between simple and compound values (Compound values should be handled as a child). Also it needs to notice type-changes and take the appropriate action."
+  "Insert a field in zipper 'loc' at location 'pathlist'/'key' with contents given by 'json'. 
+This function differentiates between simple and compound values (Compound values should be handled as a child). 
+Also it needs to notice type-changes and take the appropriate action."
   [loc pathList key json]
+  (println "replaceItem called with loc= " (zip/node loc) 
+           " key= " key " and pathList=" pathList)
   (if (= (count pathList) 0)
     (jsonZipper json)   ;; a full replacement (root is replaced)
-    (if-let [newLoc (removeItem loc pathList key)]
-      (insertItemAux newLoc pathList key :replace json)
-      nil)))  ;; for arrays this implies that replace results in an append (insert is not provided)
+    (if-let [newLoc (removeItem loc pathList key false)]
+      (do
+        (println " key removed, now doing insert.")
+        (insertItemAux newLoc pathList key :replace json))
+      (do
+        (println " removeItem seems to have failed")
+        nil))))  ;; for arrays this implies that replace results in an append (insert is not provided)
+
+;(defn replaceItem
+;  "Insert a field in zipper 'loc' at location 'pathlist'/'key' with contents given by 'json'. 
+;This function differentiates between simple and compound values (Compound values should be handled as a child). 
+;Also it needs to notice type-changes and take the appropriate action."
+;  [loc pathList key json]
+;  (if (= (count pathList) 0)
+;    ;; TODO: shouldn't we add metadata regarding status here (:replace)??
+;    (jsonZipper json)   ;; a full replacement (root is replaced)
+;    (if-let [newLoc (zipLoc loc pathList)]
+;      (let [metadata  {:json/key key
+;                       :json/status :replace}
+;            item  (jsonToZippertree json metadata '("---"))]
+;        (if (= (jsonType newLoc) jsonTypeMap)
+;          ()
+;          ())
+;      )
+;      nil)))  ;; failed to locate position pathList/Key
 
 
 
