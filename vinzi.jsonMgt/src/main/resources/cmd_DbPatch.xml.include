@@ -1,0 +1,14 @@
+<hibernate-mapping package="vinzi.jsonMgt.hib">
+	<class name="DbPatch" table="cmd_dbpatch">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="track_id"/>
+		<property name="datetime" type="timestamp"/>
+		<property name="path" type="text"/>
+		<property name="action" type="text"/>
+		<property name="patchkey" type="text"/>
+		<property name="value" type="text"/>
+	</class>
+</hibernate-mapping>
+

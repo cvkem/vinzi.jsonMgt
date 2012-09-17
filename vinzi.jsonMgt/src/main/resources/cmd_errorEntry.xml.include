@@ -1,0 +1,13 @@
+<hibernate-mapping package="vinzi.jsonMgt.hib">
+	<class name="errorEntry" table="cmd_errorentry">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="datetime" type="timestamp"/>
+		<property name="track" type="text"/>
+		<property name="command" type="text"/>
+		<property name="error" type="text"/>
+		<property name="user" type="text"/>
+	</class>
+</hibernate-mapping>
+

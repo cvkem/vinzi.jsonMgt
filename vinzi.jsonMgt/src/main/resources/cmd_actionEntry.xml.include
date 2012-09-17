@@ -1,0 +1,12 @@
+<hibernate-mapping package="vinzi.jsonMgt.hib">
+	<class name="actionEntry" table="cmd_actionentry">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="datetime" type="timestamp"/>
+		<property name="track" type="text"/>
+		<property name="action" type="text"/>
+		<property name="user" type="text"/>
+	</class>
+</hibernate-mapping>
+

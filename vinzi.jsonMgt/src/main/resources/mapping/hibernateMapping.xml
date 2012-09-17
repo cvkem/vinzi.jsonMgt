@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!--  
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+-->
+
+
+<hibernate-mapping package="vinzi.jsonMgt.hib">
+	<class name="actionEntry" table="cmd_actionentry">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="datetime" type="timestamp"/>
+		<property name="track" type="text"/>
+		<property name="action" type="text"/>
+		<property name="user" type="text"/>
+	</class>
+
+	<class name="Commit" table="cmd_commit">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="track_id"/>
+		<property name="datetime" type="timestamp"/>
+		<property name="contents" type="text"/>
+	</class>
+
+	<class name="DbPatch" table="cmd_dbpatch">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="track_id"/>
+		<property name="datetime" type="timestamp"/>
+		<property name="path" type="text"/>
+		<property name="action" type="text"/>
+		<property name="patchkey" type="text"/>
+		<property name="value" type="text"/>
+	</class>
+
+	<class name="errorEntry" table="cmd_errorentry">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="datetime" type="timestamp"/>
+		<property name="track" type="text"/>
+		<property name="command" type="text"/>
+		<property name="error" type="text"/>
+		<property name="user" type="text"/>
+	</class>
+
+	<class name="TrackInfo" table="cmd_trackinfo">
+		<id name="id" column="id">
+			<generator class="native"/>
+		</id>
+		<property name="file_location" type="text"/>
+		<property name="track_name" type="text"/>
+	</class>
+</hibernate-mapping>
+
