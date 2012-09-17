@@ -300,11 +300,11 @@
   "Get the committed full-version of 'trackName' as object and as jsonStr and the commit-specs. TrackName should be a string OR a map representing a trackInfo record with the commit-information included (datetime, json and obj)."
   ([trackNI] (getCommit trackNI 0))   ;; default is to get last commit
   ([trackNI depth]
-     {:pre [(or (= (type trackNI) java.lang.String) (map? trackNI))]}
+     {:pre [trackNI (or (= (type trackNI) java.lang.String) (map? trackNI))]}
      ;; look up the id of the latest version
      (if-let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
        (let [trackName (:track_name trackInfo)]
-	 (if-let [res (ps_getCommit (:id trackInfo) depth)]
+	 (if-let [res (ps_getCommit (:track_id trackInfo) depth)]
 	   (let [json  (:contents res)
 		 obj   (json/read-json json)]
 	     (assoc trackInfo :obj obj  :json json  :datetime (:datetime res)))
@@ -443,17 +443,17 @@
 	  (if (checkJsonFSValid check)
 	    ;; create a tables for this track
 	    (if-let [trackInfo  (registerTrackInfo f)]
-		(let [{:keys [track_id track_name]} trackInfo
-		      contents   (:normJson (readJsonFS jRead))
-		      dt         (getCurrDateTime)]
-		  (pln "filename " filename " result in track " track_name) (flush)
-		  (when track_name
-		    (ps_writeCommit track_id contents dt)
-		    (writeActionEntry track_name dt
-		       (format "Created new Track for: %s" track_name))))
-		  nil)  ;; no trackInfo returned (no track created)
+       (let [{:keys [track_id track_name]} trackInfo
+             contents   (:normJson (readJsonFS jRead))
+             dt         (getCurrDateTime)]
+         (pln "filename " filename " result in track " track_name) (flush)
+         (when track_name
+           (ps_writeCommit track_id contents dt)
+           (writeActionEntry track_name dt
+                             (format "Created new Track for: %s" track_name))))
+       nil)  ;; no trackInfo returned (no track created)
 	    (addMessage (getTrackName filename) "File with name %s is not a valid JSON-file" filename)))
-        (addMessage (getTrackName filename) "File with name %s could not be located" filename)))))
+ (addMessage (getTrackName filename) "File with name %s could not be located" filename)))))
 
 
 
@@ -483,7 +483,7 @@
 			     (applyPatchesCdfde srcObj patches srcTrack)]
 		      ;; create a tables for this track
 		      (let [trackInfo  (registerTrackInfo cdfde)
-			    trackId    (:id trackInfo)
+			    trackId    (:track_id trackInfo)
 			    contents   (getJsonRepr dstObj)
 			    dt         (getCurrDateTime)
 			    newTrack (:track_name trackInfo)]
@@ -508,6 +508,7 @@
 (defn- commitPatchSet
   "Store 'currJson' and the 'patches' to the database and return the timestamp (on success)." 
   [trackName trackId jsonStr patches]
+  {:pre [trackId]}
   (if (not (seq patches))
     (addMessage trackName "Warning: There are no changes for this commit (commit-patches cancelled).")
     (let [dt   (getCurrDateTime)]
@@ -523,7 +524,7 @@
    "Commit a single track by detecting the patches in the file-system version and storing the full version and the patches."
    [trackInfo]
    (let [{:keys   [patches fsJson]} (getPatchesFS trackInfo)
-	 trackId  (:id trackInfo)]
+         trackId  (:track_id trackInfo)]
      (pln "commitVersionTrack: patches are:")
      (doall (map pln patches))
      (commitPatchSet (:track_name trackInfo) trackId fsJson patches)))
@@ -610,8 +611,8 @@
 	dstTrack (getTrackName dstTrack)
 	srcInfo  (ps_getTrackInfo srcTrack)
 	dstInfo  (ps_getTrackInfo dstTrack)
-	srcId    (:id srcInfo)
-	dstId    (:id dstInfo)]
+	srcId    (:track_id srcInfo)
+	dstId    (:track_id dstInfo)]
     (if (not (trackDirty? srcInfo))
       (if-let [dstFile (extendFSPath (:file_location dstInfo))]
 	(if (not (trackDirty? dstInfo))

@@ -169,10 +169,12 @@
 
 (defmacro testProcess [& args]
   (let [command (apply format (map eval args))]
+    (println "testProcess: " command "(will be executed later)" )
     `(is (processCommandStr ~command) ~command)))
 
 (defmacro testNotProcess [& args]
   (let [command (apply format (map eval args))]
+    (println "testProcess: " command "(will be executed later)" )
     `(is (not (processCommandStr ~command)) ~command)))
 
 (deftest testDatabase   ;; testing the database-tool
@@ -222,7 +224,7 @@
   ;; ;; check on diff and dirty flags
   (println "VISUAL CHECK: diff should find no differences")
   (testProcess "diff %s " orgFile)
-   (is (not (trackDirty? (getTrackName orgFile)))
+  (is (not (trackDirty? (getTrackName orgFile)))
         "orgFile should not be dirty (modified) yet")
    (testProcess "diff %s " (getTrackName orgFile))
 

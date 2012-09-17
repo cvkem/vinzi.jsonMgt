@@ -5,7 +5,7 @@
         ;;:only [Patch]
         [vinzi.jsonMgt globals]
         [clojure.pprint])
-  (:require  [vinzi.jsonMgt [persistentstore :as ps]]
+  (:require  [vinzi.jsonMgt [persistentstore :as ps]]	
 	     [clojure.java
  	      [jdbc :as sql]]
 	     [clojure.data
@@ -58,12 +58,14 @@
       :autokey      " SERIAL "
       ;; mysql: MEDIUMINT NOT NULL AUTO_INCREMENT
       :int          " INTEGER "
-      :keytype      " LONG "
+      :keytype      " INTEGER "
+;;      :keytype      " LONG "
       :double       " double precision "
       :datetime     " timestamp "   ;; of date
-      :text         " character varying(1000) "
+      :text         " varchar "
 ;;      :longtext     " LONGVARCHAR "
-      :longtext     " LONGTEXT "
+      :longtext     " varchar"
+;;      :longtext     " LONGTEXT " bestaat niet in postgres
 ;;      :doc_root     ""
       })
 
@@ -155,13 +157,19 @@
 
 (defn db_writeErrorEntry
   [errorEntry]
-  (sql/insert-records (getErrorLogDb) errorEntry)
-  true)
+  (let [errorEntry (if (nil? (:id errorEntry))
+                     (dissoc errorEntry :id)
+                     (errorEntry))]
+        (sql/insert-records (getErrorLogDb) errorEntry)
+        true))
 
 (defn db_writeActionEntry
   [actionEntry]
-  (sql/insert-records (getActionLogDb) actionEntry)
-  true)
+  (let [actionEntry (if (nil? (:id actionEntry))
+                      (dissoc actionEntry :id)
+                      actionEntry)]
+    (sql/insert-records (getActionLogDb) actionEntry)
+    true))
 
 
 
@@ -200,6 +208,7 @@
   (if (and (checkTable (getActionLogDb)
 		       [:id    (str (:autokey dbs) (:primary dbs))]
 		       [:datetime  (:datetime dbs)]
+           [:track      (:text dbs)]
 		       [:d_user  (:text dbs)]
 		       [:action (:text dbs)])
 	   (checkTable  (getErrorLogDb)
@@ -321,15 +330,15 @@
 (defn db_getCommit
   "Get the data of the commit of at 'depth' steps from the last commit from the database. The function returns exactly one record (not a sequence)."
   [trackId depth]
-  {:pre [(not= (type trackId) java.lang.String)]}
+  {:pre [(not= (type trackId) java.lang.String) trackId]}
   (let [trackDb (getCommitDb)
-	query (format "SELECT id FROM %s WHERE track_id = %s ORDER BY id DESC LIMIT 1 OFFSET %s;" trackDb trackId depth)]
+        query (format "SELECT id FROM %s WHERE track_id = %s ORDER BY id DESC LIMIT 1 OFFSET %s;" trackDb trackId depth)]
     (pln "getCommit query: " query)
     (sql/with-query-results selectId
-      [query]
-      ;; and extract the corresponding version
-      (when-let [id (:id (first selectId))]
-	(sql/with-query-results res
+                            [query]
+                            ;; and extract the corresponding version
+                            (when-let [id (:id (first selectId))]
+                              (sql/with-query-results res
 	  [(format "SELECT * FROM %s WHERE id=%s" trackDb id)]
 	  (assert (= 1 (count res)))
 	  (first res))))))
