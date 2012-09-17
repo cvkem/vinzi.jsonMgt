@@ -1,4 +1,4 @@
-(ns vinzi.genCda
+(ns vinzi.pentaho.genCda
   (:require  [clojure
 	      [zip :as zip]])
   (:require  [clojure
