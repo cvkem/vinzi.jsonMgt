@@ -1,8 +1,9 @@
-(ns vinzi.jsonZip
-  (:require (clojure [zip :as zip]
-		     [walk :as walk]
-		     [string :as str :only [lower-case]]))
+(ns vinzi.json.jsonZip
   (:use clojure.pprint)
+  (:require (clojure 
+              [zip :as zip]
+              [walk :as walk]
+              [string :as str]))
   )
 
 
@@ -392,10 +393,16 @@ The (original) key is stored in the metadata with key-label :json/key. The key :
 (defn getKey
   ;; translate a key to an integer if it is a vector-key ("[n]")
   [key]
-  (if (and (not= (type key) (type :a)) 
-           (= (first key) \[))
-    (Integer/parseInt (subs key 1 (dec (count key))))
-    key))
+  (if (= (type key) (type :a))
+    key
+    (if (and (string? key)
+             (= (first key) \[))
+      (Integer/parseInt (subs key 1 (dec (count key))))
+      (if (and (vector? key)
+               (= (count key) 1)
+               (= (number? (first key))))
+        (first key)
+        key))))
 
 (defn jsonKey
   "Return the key of the current node in the json-zipperTree"
@@ -654,7 +661,8 @@ This function is only used for compound elements (collections) that will be inse
               ;; append item to vector (insert-child for key [0] and insert-right for other keys.
               (if (= (getKey key) 0)
                 (zip_dbgmi "res=basic type on non-map" (show "basic in vector" (zip/insert-child newLoc item)))
-                (let [predKey (str "[" (dec (getKey key)) "]")
+                (let [_ (println " key= " key " of type:" (type key))
+                      predKey (str "[" (dec (getKey key)) "]")
                       _  (println " key = " key " predKey  = " predKey)
                       pred (findChildWithKey newLoc predKey)]
                   (println "pred=" (zip/node pred) " has meta= " (meta (zip/node pred)))

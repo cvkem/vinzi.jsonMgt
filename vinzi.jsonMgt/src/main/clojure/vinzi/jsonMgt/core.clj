@@ -1,6 +1,6 @@
 (ns vinzi.jsonMgt.core
   (:use [vinzi.jsonMgt globals persistentstore init-persistentstore]
-        [vinzi jsonZip jsonDiff jsonEdit]
+        [vinzi.json jsonZip jsonDiff jsonEdit]
 	 [clojure.pprint])
   (:require  [clojure
 	      ;; zip only for debugging
@@ -12,7 +12,7 @@
 	     [clojure.java.io :as io]
       [vinzi.pentaho.genCda :as cda])
   (:import [java.sql SQLException]
-	   [vinzi.jsonDiff Patch]
+	   [vinzi.json.jsonDiff Patch]
 	   [java.io File BufferedReader]))
 
 

@@ -1,6 +1,6 @@
 (ns vinzi.jsonMgt.hibernate
   (:use vinzi.hib-connect.bridge)
-  (:use [vinzi
+  (:use [vinzi.json
 	 jsonZip
 	 jsonDiff   ;; needed for the definition of vinzi.jsonDiff.Patch
 	 ]
@@ -11,7 +11,7 @@
 	      [json :as json]])
   (:use [vinzi.jsonMgt.hib.clj errorEntry actionEntry Commit TrackInfo DbPatch])
   (:require [vinzi.hib-connect [bridge :as hib]])
-  (:import [vinzi.jsonDiff Patch]
+  (:import [vinzi.json.jsonDiff Patch]
 	   [java.io File]
 	   [java.util Date]
 	   [java.sql SQLException Timestamp]

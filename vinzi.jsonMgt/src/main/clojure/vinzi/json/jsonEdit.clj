@@ -1,9 +1,11 @@
-(ns vinzi.jsonEdit
-  (:require [clojure [pprint :as pprint]])
-  (:require [clojure.data [json :as json]])
-  (:use [clojure.java [io :only [reader]]])
-  (:require (clojure [zip :as zip]))
-  (:use [vinzi.jsonZip :only [jsonZipper nodeChildrenHtml nodeContentsHtml jsonPathStr isZipper? isJson? jsonStatus jsonKey]])
+(ns vinzi.json.jsonEdit
+  (:use [clojure.java [io :only [reader]]]
+        [vinzi.json.jsonZip :only [jsonZipper nodeChildrenHtml nodeContentsHtml jsonPathStr isZipper? isJson? jsonStatus jsonKey]])
+  (:require 
+    [clojure 
+     [pprint :as pprint] 
+     [zip :as zip]]
+    [clojure.data [json :as json]])
   (:import (java.awt Color Dimension)
 	   (java.awt.event ActionListener)
 	   (javax.swing JFrame JButton JPanel JLabel JOptionPane BorderFactory)

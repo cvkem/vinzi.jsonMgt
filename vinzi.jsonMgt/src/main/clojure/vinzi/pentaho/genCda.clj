@@ -6,7 +6,7 @@
 	      [string :as str]]
 	     [clojure.data [json :as json]])
   (:use [clojure.pprint])
-  (:use [vinzi.jsonZip])
+  (:use [vinzi.json.jsonZip :only [jsonTypeMap zipLoc isBoxed? isZipper?]])
   )
 
 (def testFase true)

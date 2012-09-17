@@ -1,10 +1,10 @@
-(ns vinzi.jsonDiff
+(ns vinzi.json.jsonDiff
   (:require  [clojure
               [string :as str]
-	      [zip :as zip]])
+              [zip :as zip]])
   (:use [clojure.pprint])
-;;  (:use [clojure.walk])    ;; for debugging only
-  (:use [vinzi.jsonZip])
+  ;;  (:use [clojure.walk])    ;; for debugging only
+  (:use [vinzi.json.jsonZip])
   )
 
 
@@ -498,7 +498,7 @@
 (defn getPathStrPatch
   "Get a string representation of the path list of the patch."
   [patch]
- {:pre [(= (str (type patch)) "class vinzi.jsonDiff.Patch")]} 
+ {:pre [(= (str (type patch)) "class vinzi.json.jsonDiff.Patch")]} 
  (let [pList  (:pathList patch)
 	head   (first pList)]
     (if (and (= head "") (<= (count pList) 1))

@@ -1,12 +1,7 @@
 (ns vinzi.jsonDiff.test
-  (:use [vinzi.jsonDiff] :reload)
-  (:import [vinzi.jsonDiff Patch])
-;;  (:require  [clojure.contrib
-;;	      [json :as json]
-;;	      [duck-streams :as ds :only [writer]]
-	      ;;	      [sql :as sql]
-;;	      ])
-  (:use [vinzi.jsonZip :only [jsonZipper jsonRoot jsonKey]])
+  (:use [vinzi.json.jsonDiff] :reload)
+  (:import [vinzi.json.jsonDiff Patch])
+  (:use [vinzi.json.jsonZip :only [jsonZipper jsonRoot jsonKey]])
   (:use [clojure.test])
   (:use [clojure.walk])
   (:use [clojure.pprint])
@@ -86,7 +81,7 @@
 	   :b "mod-string"}))
 
 (def patch1a [
-	     (vinzi.jsonDiff.Patch. ["/"] actChange :b "mod-string")])
+	     (Patch. ["/"] actChange :b "mod-string")])
 
 (def msg1a "change of string at top level")
      

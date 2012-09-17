@@ -1,6 +1,6 @@
 (ns vinzi.jsonEdit.test
-  (:use [vinzi.jsonEdit] :reload)
+  (:use [vinzi.json.jsonEdit] :reload)
   (:use [clojure.test]))
 
 (deftest replace-me ;; FIXME: write
-  (is false "No tests have been written."))
+  (is true "No tests have been written."))

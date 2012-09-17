@@ -1,5 +1,5 @@
 (ns vinzi.jsonZip.test
-  (:use [vinzi.jsonZip] :reload)
+  (:use [vinzi.json.jsonZip] :reload)
   (:use [clojure 
          [walk :only [postwalk]]
 	 pprint
@@ -326,7 +326,7 @@
 ;; this code triggers failure (modified code on next line)
   ;;  (is (equalForms (jsonRoot (replaceItem  org7zip ["/"] "[1]" "string"))  [-10 "string" -12 -13 -14])
 ;;      "Insert in middle of array not possible with index keys.")
-  (is (equalForms (jsonRoot (replaceItem  org7zip ["/"] "[1]" "string"))  [-10 -12 -13 -14 "string"])
+  (is (equalForms (jsonRoot (replaceItem  org7zip ["/"] "[1]" "string"))  [-10 "string" -12 -13 -14 ])
       "Insert in middle of array not possible with index keys.")
   (is (-> org7zip
   	  (removeItem ["/"] "[1]")

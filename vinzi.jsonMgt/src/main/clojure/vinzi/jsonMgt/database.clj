@@ -1,7 +1,7 @@
 (ns vinzi.jsonMgt.database
-  (:use ;;[vinzi jsonZip jsonDiff jsonEdit]
-    [vinzi.jsonZip :only [isJson?]]
-        [vinzi.jsonDiff :only [getPathList keywordize getPathStrPatch]]
+  (:use
+    [vinzi.json.jsonZip :only [isJson?]]
+        [vinzi.json.jsonDiff :only [getPathList keywordize getPathStrPatch]]
         ;;:only [Patch]
         [vinzi.jsonMgt globals]
         [clojure.pprint])
@@ -10,7 +10,7 @@
  	      [jdbc :as sql]]
 	     [clojure.data
 	      [json :as json]])
-  (:import [vinzi.jsonDiff Patch]
+  (:import [vinzi.json.jsonDiff Patch]
 	   [java.io File]
 	   [java.util Date]
 	   [java.sql SQLException Timestamp])

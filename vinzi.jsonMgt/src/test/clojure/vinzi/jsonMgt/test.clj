@@ -1,8 +1,8 @@
 (ns vinzi.jsonMgt.test
-  (:use [vinzi jsonDiff [jsonZip :only [jsonZipper]]])
+  (:use [vinzi.json jsonDiff [jsonZip :only [jsonZipper]]])
   (:use [vinzi.jsonMgt globals core persistentstore commandline])
   (:require [vinzi.jsonMgt [database :as dbps]])
-  (:import [vinzi.jsonDiff Patch]
+  (:import [vinzi.json.jsonDiff Patch]
 	   [java.sql SQLException]
 	   [java.io File])
   (:use [clojure test pprint])
@@ -12,7 +12,6 @@
 	     [clojure.java
 	      [io :as io :only [writer]]
 	      [jdbc :as sql]])
-;;  (:use [vinzi.jsonZip :only [jsonZipper]])
   )
 
 (def stack-trace-depth nil)
