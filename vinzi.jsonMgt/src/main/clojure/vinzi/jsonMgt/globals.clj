@@ -1,7 +1,9 @@
 (ns vinzi.jsonMgt.globals
+  (:use	   [clojure pprint]
+           [clojure.tools logging])
   ;; line added as binding of globals does not work yet (renamed functions in database.clj )
-  (:use [vinzi.jsonMgt persistentstore])
-  (:use [vinzi.jsonMgt.hib.clj errorEntry actionEntry])
+  (:use [vinzi.jsonMgt persistentstore]
+        [vinzi.jsonMgt.hib.clj errorEntry actionEntry])
   (:import [java.util Date]
 	   [java.sql SQLException Timestamp])
   )
@@ -11,10 +13,11 @@
 ;;(defmacro dc [m x] x)
 
 (def printPln true)
-(defn pln [& args]
-  (when printPln
-    (apply println "DEBUG: " args)
-    (flush)))
+;(defn pln [& args]
+;  (when printPln
+;    (apply println "DEBUG: " args)
+;    (flush)))
+
 (defn setPrintPln "Set the printPln var to either true or false."
   [val]
   (def printPln val))
@@ -102,9 +105,10 @@
 (defn addMessage
   "Increase the number of errors 'nrErrors' Add the message to the error database."
   [track & msgs]
-  (let [msg (apply format msgs)
-	dt (getCurrDateTime)]
-    (println "Track:'" track "' --> " msg)
+  (let [lpf "(addMessage): "
+        msg (apply format msgs)
+        dt (getCurrDateTime)]
+    (warn lpf "Track:'" track "' --> " msg)
     (signalError)
     (addErrEntry msg dt track))
   nil)

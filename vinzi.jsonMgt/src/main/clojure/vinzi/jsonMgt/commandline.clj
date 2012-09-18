@@ -1,5 +1,8 @@
 (ns vinzi.jsonMgt.commandline
-  (:use [vinzi.jsonMgt globals core persistentstore])
+  (:use	 [clojure pprint]
+         [clojure.tools logging]
+         [vinzi.jsonMgt globals])
+  (:use [vinzi.jsonMgt core persistentstore])
   (:require [clojure
 	     [string :as str]]
 	    [clojure.java
@@ -12,15 +15,16 @@
   "Process a single command provided by string 'comm'. "
   [comm]
   (binding [currCommand comm]
-    (let [cl (str/split comm #"\s+")]
+    (let [lpf "(procCommWithinConn): "
+          cl (str/split comm #"\s+")]
       (if-let [cl (if (and (seq cl) (= "" (first cl))) (rest cl) cl)]
-	;; using rest to force realisation of nil instead of empty seq
-	(when (> (count cl) 0)
-	  (pln "processCommandStr " (str cl)) (flush)
-	  (resetNrErrors)
-	  (procCL {:command (first cl)
-		   :args (rest cl)})
-	      (= @nrErrors 0))))))  ;; return true if no-errors, otherwise false
+        ;; using rest to force realisation of nil instead of empty seq
+        (when (> (count cl) 0)
+          (info "processCommandStr " (str cl))
+          (resetNrErrors)
+          (procCL {:command (first cl)
+                   :args (rest cl)})
+          (= @nrErrors 0))))))  ;; return true if no-errors, otherwise false
 
 (defn processCommandStr
   "Process a single command provided by string 'comm' within a database connection.  Mainly used for test purposes. Normal entry runs through procCommFile."

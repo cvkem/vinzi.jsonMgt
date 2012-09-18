@@ -1,14 +1,16 @@
 (ns vinzi.jsonMgt.hibernate
+  (:use	 [clojure pprint]
+         [clojure.tools logging]
+         [vinzi.jsonMgt globals])
   (:use vinzi.hib-connect.bridge)
   (:use [vinzi.json
-	 jsonZip
-	 jsonDiff   ;; needed for the definition of vinzi.jsonDiff.Patch
-	 ]
-	[vinzi.jsonMgt globals]
-	[clojure.pprint])
+         jsonZip
+         jsonDiff   ;; needed for the definition of vinzi.jsonDiff.Patch
+         ]
+        [clojure.pprint])
   (:require  [vinzi.jsonMgt [persistentstore :as ps]]
-	     [clojure.data
-	      [json :as json]])
+             [clojure.data
+              [json :as json]])
   (:use [vinzi.jsonMgt.hib.clj errorEntry actionEntry Commit TrackInfo DbPatch])
   (:require [vinzi.hib-connect [bridge :as hib]])
   (:import [vinzi.json.jsonDiff Patch]
@@ -88,14 +90,15 @@
 (defn db_createTrack
   "add an information record for this track, and returns the full trackInfo record for this track (used to generate other tables)."
   [trackName fileLocation]
-  (let [;;trackInfoDb (getTrackInfoDb)
-	getTrackRec (format "FROM TrackInfo WHERE track_name = '%s'" trackName)]
+  (let [lpf "(hib_createTrack): "
+        ;;trackInfoDb (getTrackInfoDb)
+        getTrackRec (format "FROM TrackInfo WHERE track_name = '%s'" trackName)]
     ;; create a track-info record
     (hib/with-query-results recs [getTrackRec]
-      (if (>  (count recs) 0)
-	(do
-	  (addMessage trackName "Track already exists in database.")
-	  nil)  ;; return nil (signaling no track generated
+                            (if (>  (count recs) 0)
+                              (do
+                                (addMessage trackName "Track already exists in database.")
+                                nil)  ;; return nil (signaling no track generated
 	(let [trackinf (create-TrackInfo fileLocation trackName)]
 	  ;; (sql/insert-records
 	  ;;  trackInfoDb
@@ -104,10 +107,10 @@
 	  ;; read it (now with an the 'id' set
 	  (hib/with-query-results recs [getTrackRec]
 	    (let [ti (first recs)
-		  id (:id ti)
-		  ti (assoc ti :track_id id)]
+           id (:id ti)
+           ti (assoc ti :track_id id)]
 	      ;; expose the id as track_id
-	      (pln "hib/db_create_rec returns: " ti)
+	      (debug lpf "hib/db_create_rec returns: " ti)
 	      ti)))))))
 
 
@@ -120,11 +123,12 @@
   [trackId jsonContents dt]
   {:pre [(isJson? jsonContents)
 	 (not= (type trackId) java.lang.String)]}
-  (pln "in addTrackCopy jsonContents of type: " (type jsonContents))
-  (pln "Adding a version with contents: " jsonContents)
-  (let [comm (create-Commit trackId dt jsonContents)]
-	  (store-in-hib comm)))
-  ;; (sql/insert-records (getCommitDb)
+  (let [lpf "(hib_writeCommit): "]
+        (debug lpf "in addTrackCopy jsonContents of type: " (type jsonContents)
+               "\n'tAdding a version with contents: " jsonContents)
+        (let [comm (create-Commit trackId dt jsonContents)]
+          (store-in-hib comm))))
+        ;; (sql/insert-records (getCommitDb)
   ;; 		      {:track_id trackId
   ;; 		       :datetime dt
   ;; 		       :contents jsonContents}))
@@ -170,11 +174,11 @@
   " get the path in the file-system that corresponds to trackName
     (should be only one track)"
   [trackName]
-  (let [query (format "FROM TrackInfo WHERE track_name = '%s'" trackName)]
-    (pln " getTracks: generated query " query)
+  (let [lpf "(hib_getTrackInfo): "
+        query (format "FROM TrackInfo WHERE track_name = '%s'" trackName)]
+    (debug lpf " getTracks: generated query " query)
       (hib/with-query-results res  [query]
-	(pln "results of query")
-	(pln res)
+	(debug lpf "results of query:\n\t" res)
 	(if (not= (count res) 1)
 	  (addMessage trackName "ERROR: There are %s versions of this track (action cancelled)."
 		      (count res))
@@ -182,7 +186,7 @@
 		  id (:id ti)
 		  ti (assoc ti :track_id id)]
 	      ;; expose the id as track_id
-	      (pln "hib/db_create_rec returns: " ti)
+	      (debug lpf "hib/db_create_rec returns: " ti)
 	      ti)))))
 
 
@@ -221,15 +225,16 @@
   "Retrieve the patches since 'depth' commits before the current commit. The returned list will be in the db-format. To get patches in the original format use 'retrievePatches'."
   [trackId dt]
   {:pre [(not= (type trackId) java.lang.String)]}
-    (let [query (format "FROM DbPatch WHERE datetime >= '%s' ORDER BY datetime" dt)]
-      (let [res (hib/query-hib  query)]
-	(pln "\nin hibernate getPatches")
-	(pln " The results are: ")
-	(doall (map pln res))
-	(let [tres (doall (map  dbRecToPatch res))]
-	  (pln "AND after the transform")
-	  (doall (map pln tres))
-	  tres))))
+  (let [lpf "(hib_get_Patches): "
+        query (format "FROM DbPatch WHERE datetime >= '%s' ORDER BY datetime" dt)]
+    (let [res (hib/query-hib  query)]
+      (debug lpf "\nin hibernate getPatches"
+             "\n\tThe results are: \n\t"
+             (with-out-str (doall (map println res))))
+      (let [tres (doall (map  dbRecToPatch res))]
+        (debug lpf "AND after the transform:\n\t"
+               (with-out-str (doall (map println tres))))
+        tres))))
 
 
 

@@ -1,4 +1,6 @@
 (ns vinzi.jsonMgt.core
+  (:use	   [clojure pprint]
+           [clojure.tools logging])
   (:use [vinzi.jsonMgt globals persistentstore init-persistentstore]
         [vinzi.json jsonZip jsonDiff jsonEdit]
 	 [clojure.pprint])
@@ -58,61 +60,64 @@
 ;;  (def dbs (assoc dbs :doc_root (str (.getCanonicalPath (File. ".")) "/"))))
 
 (defn configure-doc-root [cfg]
-  (if cfg
-    (let [{:keys [fileSystem]} cfg
-          ;; ensure doc_root is /-terminated OR "")
-          docRoot (str/trim (:doc_root fileSystem))
-          docRoot (if (or (= (count docRoot) 0)
-                          (= (last docRoot) theSep))
+   (let [lpf "(configure-doc-root): "]
+     (if cfg
+       (let [{:keys [fileSystem]} cfg
+             ;; ensure doc_root is /-terminated OR "")
+             docRoot (str/trim (:doc_root fileSystem))
+             docRoot (if (or (= (count docRoot) 0)
+                             (= (last docRoot) theSep))
                     docRoot
                     (str docRoot theSep))]
-      (def doc_root docRoot))
-    ;; else config-file does not exist. Use current directory
-    (let [dir (File. ".")
-          docRoot  (str (.getCanonicalPath dir) theSep)]
-      (println "  ... and setting the doc_root to current folder: " docRoot)
-      (def doc_root docRoot))))
-
+         (def doc_root docRoot))
+       ;; else config-file does not exist. Use current directory
+       (let [dir (File. ".")
+             docRoot  (str (.getCanonicalPath dir) theSep)]
+      (info lpf "  ... and setting the doc_root to current folder: " docRoot)
+      (def doc_root docRoot)))))
+   
 (defn- getConfigFileURL [configLoc]
-  (if (= configLoc homeConfig)
-    (let [fname (str (getUserHome) theSep configFileName)]
-      (if (.exists (File. fname))
-	fname
-	(println "The configuration file " fname " does not exist")))
-    (if-let [resUrl  (jio/resource configFileName)]
-      resUrl
+  (let [lpf "(getConfigFileURL): "]
+    (if (= configLoc homeConfig)
+      (let [fname (str (getUserHome) theSep configFileName)]
+        (if (.exists (File. fname))
+          fname
+          (warn lpf "The configuration file " fname " does not exist")))
+      (if-let [resUrl  (jio/resource configFileName)]
+        resUrl
       (do
-	(println "Could not locate the resource " configFileName
-	     " on the classpath!!\n"
-	     " Trying to find config-file in your home-folder")
-	(getConfigFileURL homeConfig)))))
+        (info lpf "Could not locate the resource " configFileName
+                 " on the classpath!!\n"
+                 " Trying to find config-file in your home-folder")
+        (getConfigFileURL homeConfig))))))
 
 (defn readJsonMgtConfig []
-  (let [msg (atom nil)
-	addMsg (fn [m] (swap! msg #(cons m %)))
-	configFile (getConfigFileURL configLoc)]
-    (try
-      (addMsg (str "Trying to open: " configFile))
-      (with-open [file (io/reader configFile)]
-	(addMsg "  ...File opened, going to read json")
-	(let [cfg (json/read-json file)]
-	  (addMsg "  ... Checking debug-flag")
-	  (if (:debug cfg)
-	    (do
-	      (println "DEBUG debug is true in configuration")
-	      (setPrintPln true))
-	    (setPrintPln false))
-	  (addMsg "  ..  and configure the jsonMgt docRoot")
+    (let [lpf "(readJsonMgtConfig): "
+          msg (atom nil)
+          addMsg (fn [m] (swap! msg #(cons m %)))
+          configFile (getConfigFileURL configLoc)]
+      (try
+        (addMsg (str "Trying to open: " configFile))
+        (with-open [file (io/reader configFile)]
+          (addMsg "  ...File opened, going to read json")
+          (let [cfg (json/read-json file)]
+            (addMsg "  ... Checking debug-flag")
+            (if (:debug cfg)
+              (do
+                (println "DEBUG debug is true in configuration")
+                (setPrintPln true))
+              (setPrintPln false))
+            (addMsg "  ..  and configure the jsonMgt docRoot")
 	  (configure-doc-root cfg)
 	  (addMsg "  ... Now initialize the database-system")
 	  (init-persistentstore cfg)
-	  (println "Read configuration from file: " configFile)))
-      (catch Exception e
-	(println (reverse @msg))
-	(println "Could find configuration at: " configFile
-		 "\n  ... Using non-persistent in memory database")
-	(ps_initDatabase nil)
-	(configure-doc-root nil)))))
+	  (debug lpf "Read configuration from file: " configFile)))
+        (catch Exception e
+          (error lpf (reverse @msg)
+                 "\n\tCould find configuration at: " configFile
+                   "\n\t  ... Using non-persistent in memory database")
+          (ps_initDatabase nil)
+          (configure-doc-root nil)))))
 
 
 
@@ -136,15 +141,16 @@
 (defn extendFSPath
   "Extend the path in the file-system by prepending the doc_root. (only paths starting with '.' or '/' are assumed to be fully specified paths."
   [fileName]
-  (let [fileName  (correctSeparator fileName)
-	fc (first fileName)
-	path (if (or (= fc \/)
-		     (= fc \.))
-	       ""
-	       doc_root)
-	efn (str path fileName)]
-    (pln " the current docRoot = " doc_root)
-    (pln " the extended path = " efn)
+  (let [lpf "(extendFSPath): "
+        fileName  (correctSeparator fileName)
+        fc (first fileName)
+        path (if (or (= fc \/)
+                     (= fc \.))
+               ""
+               doc_root)
+        efn (str path fileName)]
+    (debug lpf  " the current docRoot = " doc_root
+           "\n\t the extended path = " efn)
     efn))
 
 (defn simplifyFSPath
@@ -178,14 +184,15 @@
 (defn directoryExists
   "Gets the directory (the id just before the file-name and checks whether it exists. If directory is empty string (relative path it assumes true."
   [filePath]
-  (let [dir (getDirectory filePath)]
+  (let [lpf "(directoryExists): "
+        dir (getDirectory filePath)]
     (if (zero? (count dir))
       true   ;; assume directory exists for file names without path.
       (let [f  (File. dir)]   ;; File. does not need to be closed!
-	(println "extracted directory " dir)
-	(let [res (and f (.exists f) (.isDirectory f))]
-	  (println "exists: " res)
-	     res)))))
+        (trace lpf "extracted directory " dir)
+        (let [res (and f (.exists f) (.isDirectory f))]
+          (trace lpf "exists: " res)
+          res)))))
 
 
 (defn cleanStr
@@ -272,23 +279,24 @@
 (defn applyPatchesCdfde
   "Apply a set of patches to an object and process the errors-messages that were generated."
   [jsonObj patches trackName]
-  (setPrintZipErrorsFalse)
-  (clearZipErrors)
-  (pln " (type jsonObj) = " (type jsonObj))
-  (pln " patches = " patches)
-  (let [zip  (jsonZipper jsonObj)
-	_   (pln " zip = " zip)
-	res  (applyPatchesZipper zip patches)]
-   ;; show errors
-    (when-let [errors (getZipErrors)]
-      (let [dt (getCurrDateTime)]
-	(doseq [err errors]
-	  (addErrEntry err dt trackName))))
-    ;; show warning (no changes)
-    (when (identical? zip res)
-      (addMessage trackName "No patches applied."))
-    { :obj (jsonRoot res)
-      :zip res}))
+  (let [lpf "(applyPatchesCdfde): "]
+    (setPrintZipErrorsFalse)
+    (clearZipErrors)
+    (debug lpf  " (type jsonObj) = " (type jsonObj)
+           "\n\t patches = " patches)
+    (let [zip  (jsonZipper jsonObj)
+          _   (debug lpf  " zip = " zip)
+          res  (applyPatchesZipper zip patches)]
+      ;; show errors
+      (when-let [errors (getZipErrors)]
+        (let [dt (getCurrDateTime)]
+          (doseq [err errors]
+            (addErrEntry err dt trackName))))
+      ;; show warning (no changes)
+      (when (identical? zip res)
+        (addMessage trackName "No patches applied."))
+      { :obj (jsonRoot res)
+       :zip res})))
 
 (defn getJsonRepr
   "Function to translate an object to the (desired) json-representations"
@@ -322,33 +330,35 @@
   "Check whether the reader corresponds to a file that can be read by as json.
   Return true on success, false otherwise."
   [reader]
-  (try
-    (json/read-json reader)
-    (catch Exception e
-      true
-      (do
-	(pln "mess: " (.getMessage e))
-	nil)))) 
+  (let [lpf "(checkJsonFSValid): "]
+    (try
+      (json/read-json reader)
+      (catch Exception e
+        true
+        (do
+          (error lpf "message: " (.getMessage e))
+          nil))))) 
 
 
 (defn readJsonFS
   "Read an json-object from 'f'. Return a map containing the normalized json :normJson and the unpacked object :obj on succes. 'f' should be a java.io.BufferedReader or a string that represents the file."
   [f]
-  (let [nJson (fn [reader]
-		(let [obj        (json/read-json reader)
-		      normJson   (getJsonRepr obj)]
-		  {:normJson  normJson
-		   :obj       obj}))]
+  (let [lpf "(readJsonFS): "
+        nJson (fn [reader]
+                (let [obj        (json/read-json reader)
+                      normJson   (getJsonRepr obj)]
+                  {:normJson  normJson
+                   :obj       obj}))]
     (try
       (if (= (str (type f)) "class java.lang.String")
-	(let [fileName (extendFSPath f)]
-	  (with-open [rdr (io/reader fileName)]
-	  (nJson rdr)))
-	(nJson f))
+        (let [fileName (extendFSPath f)]
+          (with-open [rdr (io/reader fileName)]
+            (nJson rdr)))
+        (nJson f))
       (catch Exception e
-	(println "exception: " e)
-	(println "CAUGHT EXCEPTION with message: " (.getMessage e))
-	nil))))
+        (error lpf "exception: " e
+               "\n\tCAUGHT EXCEPTION with message: " (.getMessage e))
+        nil))))
 
 
 ;; (defn getNormalizedJsonFile
@@ -365,13 +375,13 @@
   [trackInfo contents obj]
   {:pre [(map? trackInfo) (isJson? contents)]}
   (let [{filename :file_location} trackInfo
-	filename (extendFSPath filename)
-	cda      (cda/generateCda (jsonZipper obj))
-	cdaFile  (deriveCdaFilename filename)]
-					;	(str (apply str (take (- (count filename) 5) filename)) "cda")]
+        filename (extendFSPath filename)
+        cda      (cda/generateCda (jsonZipper obj))
+        cdaFile  (deriveCdaFilename filename)]
+    ;	(str (apply str (take (- (count filename) 5) filename)) "cda")]
     (spit filename contents)
     (spit cdaFile  cda)
-;;    (println "TODO: Add exception handler to catch errors??")
+    ;;    (println "TODO: Add exception handler to catch errors??")
     true))
 
 
@@ -381,15 +391,15 @@
   (let [track (:track_name trackInfo)]
     (if-let [file (extendFSPath (:file_location trackInfo))]
       (if-let [dbObj   (:obj (getCommit trackInfo))]
-	(if-let [jfs    (readJsonFS file)]
-	  (let [patches (findPatchesJson dbObj (:obj jfs))]
-	  {:file      file
-	   :dbObj     dbObj
-	   :fsJson    (:normJson jfs)
-	   :patches   patches   })
-	  (addMessage track "File '%s' could not be read." file))
-	(addMessage track "No commit found for this track."))
-    (addMessage track "No file-location for this track."))))
+        (if-let [jfs    (readJsonFS file)]
+          (let [patches (findPatchesJson dbObj (:obj jfs))]
+            {:file      file
+             :dbObj     dbObj
+             :fsJson    (:normJson jfs)
+             :patches   patches   })
+          (addMessage track "File '%s' could not be read." file))
+        (addMessage track "No commit found for this track."))
+      (addMessage track "No file-location for this track."))))
 
 
 
@@ -398,9 +408,9 @@
   [trackNI]
      (if-let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
        (let [org (:obj (getCommit trackInfo))
-	     mod (:obj (readJsonFS (:file_location trackInfo)))
-	     change (jsonChanged? org mod)]
-	 (first change))  ;; take first to map empty list to nil
+             mod (:obj (readJsonFS (:file_location trackInfo)))
+             change (jsonChanged? org mod)]
+         (first change))  ;; take first to map empty list to nil
        (addMessage trackNI "Could not locate track (information)")))
 
 
@@ -435,25 +445,26 @@
   "Create a new track for a json-file."
   [args]
   (doseq [filename args]
-    (let [filename (extendFSPath filename)  ;; prepend document-root
-	  f  (File. filename)]   ;; File. does not need to be closed!
+    (let [lpf "(createTracks): "
+          filename (extendFSPath filename)  ;; prepend document-root
+          f  (File. filename)]   ;; File. does not need to be closed!
       (if (and f (.exists f) (.isFile f))
-	(with-open [check (io/reader f)
-		    jRead (io/reader f)]
-	  (if (checkJsonFSValid check)
-	    ;; create a tables for this track
-	    (if-let [trackInfo  (registerTrackInfo f)]
-       (let [{:keys [track_id track_name]} trackInfo
-             contents   (:normJson (readJsonFS jRead))
-             dt         (getCurrDateTime)]
-         (pln "filename " filename " result in track " track_name) (flush)
-         (when track_name
-           (ps_writeCommit track_id contents dt)
-           (writeActionEntry track_name dt
-                             (format "Created new Track for: %s" track_name))))
-       nil)  ;; no trackInfo returned (no track created)
-	    (addMessage (getTrackName filename) "File with name %s is not a valid JSON-file" filename)))
- (addMessage (getTrackName filename) "File with name %s could not be located" filename)))))
+        (with-open [check (io/reader f)
+                    jRead (io/reader f)]
+          (if (checkJsonFSValid check)
+            ;; create a tables for this track
+            (if-let [trackInfo  (registerTrackInfo f)]
+              (let [{:keys [track_id track_name]} trackInfo
+                    contents   (:normJson (readJsonFS jRead))
+                    dt         (getCurrDateTime)]
+                (debug lpf  "filename " filename " result in track " track_name) (flush)
+                (when track_name
+                  (ps_writeCommit track_id contents dt)
+                  (writeActionEntry track_name dt
+                                    (format "Created new Track for: %s" track_name))))
+              nil)  ;; no trackInfo returned (no track created)
+            (addMessage (getTrackName filename) "File with name %s is not a valid JSON-file" filename)))
+        (addMessage (getTrackName filename) "File with name %s could not be located" filename)))))
 
 
 
@@ -511,11 +522,12 @@
   {:pre [trackId]}
   (if (not (seq patches))
     (addMessage trackName "Warning: There are no changes for this commit (commit-patches cancelled).")
-    (let [dt   (getCurrDateTime)]
-      (pln "obtained patches " patches)
+    (let [lpf "(commitPatchSet): "
+          dt   (getCurrDateTime)]
+      (debug lpf  "obtained patches " patches)
       (ps_writeCommit trackId jsonStr dt)
       (ps_writePatches trackId patches dt)
-      (pln "Added a new version for " trackName)
+      (debug lpf  "Added a new version for " trackName)
       dt)))
 
 
@@ -523,10 +535,14 @@
  (defn- commitTrackPatches
    "Commit a single track by detecting the patches in the file-system version and storing the full version and the patches."
    [trackInfo]
-   (let [{:keys   [patches fsJson]} (getPatchesFS trackInfo)
+   (let [lpf "(commitTrackPatches): "
+         {:keys   [patches fsJson]} (getPatchesFS trackInfo)
          trackId  (:track_id trackInfo)]
-     (pln "commitVersionTrack: patches are:")
-     (doall (map pln patches))
+     (debug lpf  "commitVersionTrack: patches are:")
+     (let [patchStr (with-out-str (doall (map println patches)))]
+       (if (enabled? :info)
+                     (info lpf patchStr)
+                     (println patchStr)))
      (commitPatchSet (:track_name trackInfo) trackId fsJson patches)))
 
 
@@ -544,16 +560,17 @@
  (defn- diffViewer
    "Open a viewer for this track. The viewer uses color-code to highlight differences."
    [track]
-   (let [trackInfo  (ps_getTrackInfo track)
-	 {:keys [patches dbObj]} (getPatchesFS trackInfo)]
+   (let [lpf "(diffViewer): "
+         trackInfo  (ps_getTrackInfo track)
+         {:keys [patches dbObj]} (getPatchesFS trackInfo)]
      (if dbObj
        ;;TODO check if track is the right argument!!
        (if-let [{zip :zip} (applyPatchesCdfde dbObj patches track)]
-	 (do
-	   (println (format "Opening a viewer for track '%s'" track))
-	   ;; open the zip-viewer (intermediate step via json kills meta-data)
-	   (jsonZipViewer zip))
-	 (addMessage track "detecting and applying/marking patches failed"))
+         (do
+           (info lpf (format "Opening a viewer for track '%s'" track))
+           ;; open the zip-viewer (intermediate step via json kills meta-data)
+           (jsonZipViewer zip))
+         (addMessage track "detecting and applying/marking patches failed"))
        (addMessage track "Could not retrieve file determine patches for the filesystem version" )))) 
 
 (defn diffViewers
@@ -583,22 +600,26 @@
 (defn showDirty
   "show which dashboards have been changed since their last commit."
   [args]
-  (let [checkTrack (fn [trackInfo]
-		     (pln "showDirty (process track): " trackInfo)
-		     (print (format "  Check track '%s':  " (:track_name trackInfo))) (flush)
-		     (if (trackDirty? trackInfo)
-		       (println "CHANGED")
-		       (println "match"))) ]
+  (let [lpf "(showDirty): "
+        checkTrack (fn [trackInfo]
+                     (debug lpf  "showDirty (process track): " trackInfo)
+                     (print (format "  Check track '%s':  " (:track_name trackInfo))) (flush)
+                     (let [dirty? (if (trackDirty? trackInfo) "CHANGED" "match")]
+                       (println dirty?)
+                       (info lpf "Check trace '" (:track_name trackInfo) "' returned:" dirty?)
+                       ))]
     (if (seq args)
       (doseq [trackNI args]
-	(let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
-	  (checkTrack trackInfo)))
+        (let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
+          (checkTrack trackInfo)))
       ;; if no arguments passed than process status of all tracks.
       (let [allTracks (ps_getAllTracks)]
-	(if (seq allTracks)
-	  (doseq [trackInfo allTracks]
-	    (checkTrack trackInfo))
-	  (println "No tracks found!"))))))
+        (if (seq allTracks)
+          (doseq [trackInfo allTracks]
+            (checkTrack trackInfo))
+          (do
+            (println "No tracks found!")
+            (info lpf "No tracks found!")))))))
 
 
 
@@ -693,17 +714,20 @@
 	(addMessage track "Drop last commit aborted by user.")))))
 
 
-(defn select-log-lines "If first arg is '*' return all, otherwise select items matched by args" [items args]
-  (pln "The args are " args)
-  (let [res (if (= (first args) "*")
-    items
-    (let [tracks (getExpandedTrackList args)
-	  tracks (apply hash-set tracks)]
-      ;; filter for  items contained in tracks
-      items  (filter #(contains? tracks (:track %)) items)))]
-    (pln " resulting in selection: " res)
-    res))
-
+(defn select-log-lines 
+  "If first arg is '*' return all, otherwise select items matched by args" 
+  [items args]
+  (let [lpf "(select-log-lines): "]
+    (debug lpf  "The args are " args)
+    (let [res (if (= (first args) "*")
+                items
+                (let [tracks (getExpandedTrackList args)
+                      tracks (apply hash-set tracks)]
+                  ;; filter for  items contained in tracks
+                  items  (filter #(contains? tracks (:track %)) items)))]
+      (debug lpf  " resulting in selection: " res)
+      res)))
+  
 (defn generate-log-lines "Show the log-items for the tracks specified in 'args'. If no tracks are specified all log-entries will be shown. The logentries will be sorted with most recent first"
   [items args]
   (let [items  (select-log-lines items args)]
@@ -828,44 +852,45 @@
  "Process a command list consisting of a sequence of tokens (words).
 Assume that the sql-connection is already established."
   [statement]
-  (let [comm (str/lower-case (:command statement))
-	expand? (not (contains? dontExpandComm comm))]
+  (let [lpf "(processCommand): " 
+        comm (str/lower-case (:command statement))
+        expand? (not (contains? dontExpandComm comm))]
     (letfn [(get-track-item [theKey]
-			(let [{args theKey} statement]
-			  (if expand? (getExpandedTrackList args) args)))
-	    (process-srcDst []
-			    (let [src (get-track-item :src)
-				  dst (get-track-item :dst)
-				  maxSrc (commandMaxSrcMap comm 100)
-				  cntSrc (count src)]
-			      (if (> cntSrc maxSrc)
-				{:error (format "Command %s accepts at most %s sources.\nReceived: %s"
-						comm maxSrc src)}
-				(concat src dst))))
-	    (process-args []
-			  (let [args (if (:src statement)
-				       (process-srcDst)
-				       (get-track-item :args))]
-			    args))]
-	  ;; either :src and :dst   OR   :args OR neither,  but not both
-	  (assert (or (and (nil? (:src statement)) (nil? (:dst statement)))
-		      (nil? (:args statement))))
-	  (let [args (process-args)
-		oper (commandFuncMap comm)]
-	    (if (not (map? args)) 
-	      (if oper
-		(do
-		  (pln "Executing command: " comm )
-		  (when (seq args)
-		    (pln "   with arguments: " args)) 
-		  (try
-		    (oper args)
-		    (catch SQLException e
-		      (printSQLExcept (str "Processing command " comm) e)
-		      "Exception caught")))
-		(println (format "ERROR: unknown command %s" comm)))
-	      (println (:error args)))))))
-	      
+                            (let [{args theKey} statement]
+                              (if expand? (getExpandedTrackList args) args)))
+            (process-srcDst []
+                            (let [src (get-track-item :src)
+                                  dst (get-track-item :dst)
+                                  maxSrc (commandMaxSrcMap comm 100)
+                                  cntSrc (count src)]
+                              (if (> cntSrc maxSrc)
+                                {:error (format "Command %s accepts at most %s sources.\nReceived: %s"
+                                                comm maxSrc src)}
+                                (concat src dst))))
+            (process-args []
+                          (let [args (if (:src statement)
+                                       (process-srcDst)
+                                       (get-track-item :args))]
+                            args))]
+           ;; either :src and :dst   OR   :args OR neither,  but not both
+           (assert (or (and (nil? (:src statement)) (nil? (:dst statement)))
+                       (nil? (:args statement))))
+           (let [args (process-args)
+                 oper (commandFuncMap comm)]
+             (if (not (map? args)) 
+               (if oper
+                 (do
+                   (debug lpf  "Executing command: " comm )
+                   (when (seq args)
+                     (debug lpf  "   with arguments: " args)) 
+                   (try
+                     (oper args)
+                     (catch SQLException e
+                       (printSQLExcept (str "Processing command " comm) e)
+                       "Exception caught")))
+                 (println (format "ERROR: unknown command %s" comm)))
+               (println (:error args)))))))
+
 (defn procCL "Process the command assumed first arg is source and rest is destination"
   [statement]
   (let [{:keys [command args]} statement

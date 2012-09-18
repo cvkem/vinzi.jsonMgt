@@ -1,10 +1,10 @@
 (ns vinzi.jsonMgt.database
-  (:use
-    [vinzi.json.jsonZip :only [isJson?]]
-        [vinzi.json.jsonDiff :only [getPathList keywordize getPathStrPatch]]
+    (:use	 [clojure pprint]
+           [clojure.tools logging]
+           [vinzi.jsonMgt globals])
+    (:use [vinzi.json.jsonZip :only [isJson?]]
+          [vinzi.json.jsonDiff :only [getPathList keywordize getPathStrPatch]])
         ;;:only [Patch]
-        [vinzi.jsonMgt globals]
-        [clojure.pprint])
   (:require  [vinzi.jsonMgt [persistentstore :as ps]]	
 	     [clojure.java
  	      [jdbc :as sql]]
@@ -177,14 +177,15 @@
 (defn- existsTable
   "Check whether the tables 'name' exists."
   [name]
-  (try
-    (sql/with-query-results recs
-      [(format "SELECT COUNT(*) FROM %s;" name)]
-      true)   ;; table exists (no exception)
-    (catch Exception e
-      (do
-	(pln "mess: " (.getMessage e))
-	false)))) 
+  (let [lpf "(existsTable): "]
+    (try
+      (sql/with-query-results recs
+                              [(format "SELECT COUNT(*) FROM %s;" name)]
+                              true)   ;; table exists (no exception)
+      (catch Exception e
+        (do
+          (debug lpf "mess: " (.getMessage e))
+          false))))) 
 
 
 
@@ -272,12 +273,13 @@
   [trackId jsonContents dt]
   {:pre [(isJson? jsonContents)
 	 (not= (type trackId) java.lang.String)]}
-  (pln "in addTrackCopy jsonContents of type: " (type jsonContents))
-  (pln "Adding a version with contents: " jsonContents)
-  (sql/insert-records (getCommitDb)
-		      {:track_id trackId
-		       :datetime dt
-		       :contents jsonContents}))
+  (let [lpf "(db_writeCommit): "]
+    (debug lpf "in addTrackCopy jsonContents of type: " (type jsonContents)
+           "\n\tAdding a version with contents: " jsonContents)
+    (sql/insert-records (getCommitDb)
+                        {:track_id trackId
+                         :datetime dt
+                         :contents jsonContents})))
 
 
 (defn db_writePatches
@@ -314,12 +316,12 @@
 (defn db_getTrackInfo
   " get the path in the file-system that corresponds to trackName (should be only one track)"
   [trackName]
-  (let [query (format "SELECT * FROM %s WHERE %s = '%s'"
+  (let [lpf "(db_getTrackInfo): "
+        query (format "SELECT * FROM %s WHERE %s = '%s'"
 		      (getTrackInfoDb) "track_name" trackName)]
-    (pln " getTracks: generated query " query)
+    (debug lpf " getTracks: generated query " query)
       (sql/with-query-results res  [query]
-	(pln "results of query")
-	(pln res)
+	(debug lpf "results of query:\n\t" res)
 	(if (not= (count res) 1)
 	  (addMessage trackName "ERROR: There are %s versions of this track (action cancelled)."
 		      (count res))
@@ -331,9 +333,10 @@
   "Get the data of the commit of at 'depth' steps from the last commit from the database. The function returns exactly one record (not a sequence)."
   [trackId depth]
   {:pre [(not= (type trackId) java.lang.String) trackId]}
-  (let [trackDb (getCommitDb)
+  (let [lpf "(db_getCommit): "
+        trackDb (getCommitDb)
         query (format "SELECT id FROM %s WHERE track_id = %s ORDER BY id DESC LIMIT 1 OFFSET %s;" trackDb trackId depth)]
-    (pln "getCommit query: " query)
+    (debug lpf "getCommit query: " query)
     (sql/with-query-results selectId
                             [query]
                             ;; and extract the corresponding version
@@ -349,8 +352,9 @@
   "Retrieve the patches since 'depth' commits before the current commit. The returned list will be in the db-format. To get patches in the original format use 'retrievePatches'."
   [trackId dt]
   {:pre [(not= (type trackId) java.lang.String)]}
-    (let [query (format "SELECT * FROM %s WHERE datetime >= '%s' ORDER BY datetime ASC;" (getPatchDb) dt)]
-      (pln "\nThe retrieve-patch-query is: " query)
+    (let [lpf "(db_getPatches): "
+          query (format "SELECT * FROM %s WHERE datetime >= '%s' ORDER BY datetime ASC;" (getPatchDb) dt)]
+      (debug lpf "\nThe retrieve-patch-query is: " query)
       (sql/with-query-results res  [query]
 	;; TO DO: loop to materialize result set (why not doall??)
 	;; (loop [ret []
@@ -360,11 +364,11 @@
 	;;     ret))
 	;;
 	;; map database patches to Patch records
-	(pln "query returns " (count res) " values:")
-	(doall (map pln res))
+	(debug lpf "query returns " (count res) " values:"
+        (with-out-str (doall (map println res))))
 	(let [ret (doall (map  dbRecToPatch res))]
-	  (pln "The result after dbRecToPatch is:")
-	  (doall (map pln ret))
+	  (debug lpf "The result after dbRecToPatch is:"
+          (with-out-str (doall (map println ret))))
 	  ret))))
 
 
