@@ -108,14 +108,14 @@
                 (setPrintPln true))
               (setPrintPln false))
             (addMsg "  ..  and configure the jsonMgt docRoot")
-	  (configure-doc-root cfg)
-	  (addMsg "  ... Now initialize the database-system")
-	  (init-persistentstore cfg)
-	  (debug lpf "Read configuration from file: " configFile)))
+            (configure-doc-root cfg)
+            (addMsg "  ... Now initialize the database-system")
+            (init-persistentstore cfg)
+            (debug lpf "Read configuration from file: " configFile)))
         (catch Exception e
           (error lpf (reverse @msg)
                  "\n\tCould find configuration at: " configFile
-                   "\n\t  ... Using non-persistent in memory database")
+                 "\n\t  ... Using non-persistent in memory database")
           (ps_initDatabase nil)
           (configure-doc-root nil)))))
 
@@ -751,7 +751,7 @@
   (generate-log-lines (ps_getAllErrors) args))
 
 
-(def introMessage "This is cdfdeMgt tool v0.8 for management of the Pentaho cdfde dashboards developped by Vinzi.nl (2011).\n Type help to get a general introduction.") 
+(def introMessage "Community Dashboard Manager v0.9 for the synchroneous managemnent of Pentaho cdfde dashboards\n developed by Vinzi.nl (2011-2012).\n Type help to get a general introduction.") 
 
 (def helpMessages
      {
