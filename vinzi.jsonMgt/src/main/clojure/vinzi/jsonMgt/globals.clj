@@ -4,6 +4,8 @@
   ;; line added as binding of globals does not work yet (renamed functions in database.clj )
   (:use [vinzi.jsonMgt persistentstore]
         [vinzi.jsonMgt.hib.clj errorEntry actionEntry])
+  (:require [vinzi.tools
+             [vSql :as vSql]])
   (:import [java.util Date]
 	   [java.sql SQLException Timestamp])
   )
@@ -85,14 +87,20 @@
   "Print report for an SQL exception
    (including one step higher in the exception-chain."
   [location e]
-  (println "Exception caught at location " location)
-  (println "Message: " (.getMessage e))
-  (println "ErrorCode: " (.getErrorCode e))
-  (println "SQLState:  " (.getSQLState e))
-  (when-let [n (.getNextException e)]
-    (println "Next-message: " (.getMessage n))
-    (println "Next-errorcode: " (.getErrorCode n)))
-  (flush))
+  (vSql/printSQLExcept location e))
+
+;(defn printSQLExcept
+;  "Print report for an SQL exception
+;   (including one step higher in the exception-chain."
+;  [location e]
+;  (println "Exception caught at location " location)
+;  (println "Message: " (.getMessage e))
+;  (println "ErrorCode: " (.getErrorCode e))
+;  (println "SQLState:  " (.getSQLState e))
+;  (when-let [n (.getNextException e)]
+;    (println "Next-message: " (.getMessage n))
+;    (println "Next-errorcode: " (.getErrorCode n)))
+;  (flush))
 
 
 

@@ -894,10 +894,10 @@ Assume that the sql-connection is already established."
 (defn procCL "Process the command assumed first arg is source and rest is destination"
   [statement]
   (let [{:keys [command args]} statement
-	src (first args)
-	src (if src (list src) '())
-	dst (rest args)]
-  (processCommand {:command command
-		   :src    src
-		   :dst    dst})))
+        src (first args)
+        src (if src (list src) '())
+        dst (rest args)]
+    (processCommand {:command command
+                     :src    src
+                     :dst    dst})))
 

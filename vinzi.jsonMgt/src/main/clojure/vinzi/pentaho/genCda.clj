@@ -1,11 +1,12 @@
 (ns vinzi.pentaho.genCda
+  (:use	   [clojure pprint]
+           [clojure.tools logging])
   (:require  [clojure
 	      [zip :as zip]])
   (:require  [clojure
 	      [prxml :as xml]
 	      [string :as str]]
 	     [clojure.data [json :as json]])
-  (:use [clojure.pprint])
   (:use [vinzi.json.jsonZip :only [jsonTypeMap zipLoc isBoxed? isZipper?]])
   )
 
@@ -85,55 +86,55 @@
   "Add the attirbute field to DataAccess using key 'k'. "
   [k xml node]
   (let [value (getNodeVal node :value)
-	src (:src xml)
-	nDA (assoc-in src [1 k] value)
-	res (assoc xml :src nDA
-		   :id value)]
+        src (:src xml)
+        nDA (assoc-in src [1 k] value)
+        res (assoc xml :src nDA
+                   :id value)]
     res))
 
 (defn addDAcontents
   "Add the value field as contents within DataAccess using key 'k'. "
   [k xml node]
   (let [value (getNodeVal node :value)
-	nDA  (conj (:src xml) [k value])
-	res (assoc xml :src nDA)]
+        nDA  (conj (:src xml) [k value])
+        res (assoc xml :src nDA)]
     res))
 
 (defn addTag
   "Add the value field as tag to using key 'k' for later usage. "
   [k xml node]
   (let [value (getNodeVal node :value)
-	res (assoc-in xml [:tags k] value)]
+        res (assoc-in xml [:tags k] value)]
     res))
 
 (defn addParam
   "Add the value field as param-tag to using key 'k' for later usage. The parameter is transformed to a json-object. (Parameters are stored as a vector)"
   [k xml node]
   (let [value (json/read-json (getNodeVal node :value))
-	pars   (conj (:params xml) value)
-	res (assoc xml :params  pars)]
+        pars   (conj (:params xml) value)
+        res (assoc xml :params  pars)]
     res))
 
 (defn addValuesArray
   "Add the value field as param-tag to using key 'k' for later usage. The parameter is transformed to a json-object. (Parameters are stored as a vector)"
   [k xml node itemTag]
   (let [nodeVal (getNodeVal node :value)
-	values (json/read-json nodeVal)]
+        values (json/read-json nodeVal)]
     (loop [vs values
-	   cumm [] ]
+           cumm [] ]
       (if (seq vs)
-	(let [v (first vs)
-	      idx (get v 0)
-	      name (get v 1)
-	      descr [itemTag  {:idx idx} [:Name name]]
-	      cumm (conj cumm descr)]
-	  (recur (rest vs) cumm))
-	;; compute the adjusted xml
-	(let [contents [(keyword (str k "s"))]
-	      contents (if (seq cumm) (into contents cumm) contents)
-	      nDA  (conj (:src xml) contents)
-	      res (assoc xml :src nDA)]
-	  res)))))
+        (let [v (first vs)
+              idx (get v 0)
+              name (get v 1)
+              descr [itemTag  {:idx idx} [:Name name]]
+              cumm (conj cumm descr)]
+          (recur (rest vs) cumm))
+        ;; compute the adjusted xml
+        (let [contents [(keyword (str k "s"))]
+              contents (if (seq cumm) (into contents cumm) contents)
+              nDA  (conj (:src xml) contents)
+              res (assoc xml :src nDA)]
+          res)))))
 
 
 
@@ -322,20 +323,20 @@
 
 (defn addConnectionAux [ds contents tags]
   (let [{:keys [id meta_conntype]} tags
-	connParam {:id id :type meta_conntype}
-	contents (loop [contents contents
-			cumm     []]
-		   (if (seq contents)
-		     (let [item (first contents)
-			   value (item tags)
-			   record (if value [item value] [item])
-			   cumm (conj cumm record)]
-		       (when (nil? value)
-			 (println (format "Warning: expected item %s in connection %s"
-					  item meta_conntype)))
-		       (recur (rest contents) cumm))
-		     cumm))
-	connection (into [:Connection connParam] contents)]
+        connParam {:id id :type meta_conntype}
+        contents (loop [contents contents
+                        cumm     []]
+                   (if (seq contents)
+                     (let [item (first contents)
+                           value (item tags)
+                           record (if value [item value] [item])
+                           cumm (conj cumm record)]
+                       (when (nil? value)
+                         (println (format "Warning: expected item %s in connection %s"
+                                          item meta_conntype)))
+                       (recur (rest contents) cumm))
+                     cumm))
+        connection (into [:Connection connParam] contents)]
     (conj ds connection)))
 
 (def connectionDefinitions 
@@ -353,99 +354,54 @@
     (if-let [fields (connectionDefinitions id)]
       (addConnectionAux ds fields tags)
       (do
-	(println "ERROR: unrecognized meta_conntype: " id)
-	ds))
-      ds))  ;; return datasource unmodified
+        (println "ERROR: unrecognized meta_conntype: " id)
+        ds))
+    ds))  ;; return datasource unmodified
 
 
-;; OLD CODE: removed by refactoring
-;;
-;; (defn addConnection
-;;   "Add a connection to the datasources 'ds' based on the information in 'tags'."
-;;   [ds tags]
-;;   (let [{:keys [id meta_conntype]} tags
-;; 	 connParam {:id id :type meta_conntype}]
-;;     (if (= meta_conntype "sql.jndi")
-;;       (let [jndi  (:jndi tags)
-;; 	    connection [:Connection
-;; 		    connParam
-;; 		    [:Jndi jndi]]]
-;; 	(when (not (and id jndi meta_conntype))
-;; 	  (println "WARNING: some data seems missing for connection with id: " id))
-;; 	(conj ds connection))
-;;       (if (= meta_conntype "sql.jdbc")
-;; 	(let [{:keys [driver url user pass]} tags
-;; 	      connection [:Connection
-;; 			  connParam
-;; 			  [:Driver driver]
-;; 			  [:Pass   pass]
-;; 			  [:Url    url]
-;; 			  [:User   user]]]
-;; 	(when (not (and id meta_conntype driver pass url user))
-;; 	  (println "WARNING: some data seems missing for connection with id: " id))
-;; 	(conj ds connection))
-;; 	(if (= meta_conntype "mondrian.jndi")
-;; 	  (let [catalog  (:catalog tags)
-;; 		connection [:Connection
-;; 			    connParam
-;; 			    [:Catalog catalog]]]
-;; 	    (when (not (and id catalog meta_conntype))
-;; 	      (println "WARNING: some data seems missing for connection with id: " id))
-;; 	    (conj ds connection))
-;; 	  (if (= meta_conntype "scripting.scripting")
-;; 	    (let [initscript  (:initscript tags)
-;; 		  language    (:language tags)
-;; 		  connection [:Connection
-;; 			      connParam
-;; 			      [:Initscript initscript]
-;; 			      [:Language language]]]
-;; 	      (when (not (and id initscript language meta_conntype))
-;; 		(println "WARNING: some data seems missing for connection with id: " id))
-;; 	      (conj ds connection))
-;; 	  (do
-;; 	    (when meta_conntype
-;; 	      (println "ERROR: unrecognized meta_conntype: " meta_conntype))))))))
 
 (defn addOutput [ds tags]
   (if-let [output (:Output tags)]
     (if-let [val (json/read-json output)]
       (if (> (count val) 0)
-	(let [val        (apply str (interpose "," val))
-	      param      {:indexes val}
-	      outputMode (:OutputMode tags)
-	      param      (if outputMode
-			   (assoc param :mode outputMode)
-			   param)
-	      v          (vector :Output param)]
-	  (conj ds v))
-	ds)
+        (let [val        (apply str (interpose "," val))
+              param      {:indexes val}
+              outputMode (:OutputMode tags)
+              param      (if outputMode
+                           (assoc param :mode outputMode)
+                           param)
+              v          (vector :Output param)]
+          (conj ds v))
+        ds)
       ds)
     ds))  ;; return datasource unmodified
+
+
 
 (defn addParameters [ds params]
   ;;(println "Enter addParams: with count = " (count params))
   (when (> (count params) 1)
     (println "ERROR: expecting at most 1 set of params. received " (count params)))
   (loop [params (first params)
-	 cumm  [] ]
+         cumm  [] ]
     (if (seq params)
       (let [p (first params)
-	    par [:Parameter {:name (get p 0)
-			     :default (get p 1)
-			     :type  (get p 2)
-			     }]
-	    _ (let [p3 (get p 3)]
-		(when (and p3 (not (= (str/trim p3) "")))
-		(println "WARNING: do not now how to process parameter-setting" (get p 3))))
-	    cumm (conj cumm par)]
-	;;	  (println "added parameter: " par)
-	(recur (rest params) cumm))
+            par [:Parameter {:name (get p 0)
+                             :default (get p 1)
+                             :type  (get p 2)
+                             }]
+            _ (let [p3 (get p 3)]
+                (when (and p3 (not (= (str/trim p3) "")))
+                  (println "WARNING: do not now how to process parameter-setting" (get p 3))))
+            cumm (conj cumm par)]
+        ;;	  (println "added parameter: " par)
+        (recur (rest params) cumm))
       ;; all params processed compute result vector
       (let [res [:Parameters]
-	    res (if (seq cumm) (into res cumm) res)
-	    ds (conj ds res)]
-	ds))))  
-	
+            res (if (seq cumm) (into res cumm) res)
+            ds (conj ds res)]
+        ds))))  
+
 
 (defn mergeSources [_ res]
   (let [{:keys [tags src]} res]
@@ -468,33 +424,35 @@
   "generate a Cda vector for the 'cdfde' structure (jsonZipper of a .cdfde-file)."
   [cdfde]
   {:pre [(not (nil? cdfde)) (isZipper? cdfde)]}
-  (if-let [cdfde (zipLoc cdfde ["/" :datasources])]
-    (let [initCumm {:cnt 0
-		    :head baseDataSources
-		    :src  baseDataAccess
-		    :sources []
-		    :tags {}
-		    :params []}
-	  res (applyToChildCumm (zip/down cdfde) initCumm
-				processProps  mergeSources
-				processRecord nil)]
-;;      (println "the result of CdaVector is : " res)
-      res)
-    (println "Could not locate the datasources in the cdfde file")))
+  (let [lpf "(generateCdaVector): "]
+        (if-let [cdfde (zipLoc cdfde ["/" :datasources])]
+          (let [initCumm {:cnt 0
+                          :head baseDataSources
+                          :src  baseDataAccess
+                          :sources []
+                          :tags {}
+                          :params []}
+                res (applyToChildCumm (zip/down cdfde) initCumm
+                                processProps  mergeSources
+                                processRecord nil)]
+            (trace lpf "the result of CdaVector is : " res)
+            res)
+          (error lpf "Could not locate the datasources in the cdfde file"))))
 
 (defn generateCda
   "generate a Cda file for the 'cdfde' structure (jsonZipper of a .cdfde-file."
   [cdfde]
   {:pre [(not (nil? cdfde)) (isZipper? cdfde)]}
-  (if-let [xmlVect  (generateCdaVector cdfde)]
-    (if-let [xml (generateXML xmlVect)]
-      xml
-      (println "ERROR: Could not generate the XML"))
-    (println "Could not locate the datasources in the cdfde file")))
-
-(comment
-;;;;;;;;;;;;;;
-;;; temporary code for testing
+  (let [lpf "(generateCda): "]
+    (if-let [xmlVect  (generateCdaVector cdfde)]
+      (if-let [xml (generateXML xmlVect)]
+        xml
+        (error lpf "ERROR: Could not generate the XML"))
+      (error lpf "Could not locate the datasources in the cdfde file"))))
+  
+  (comment
+    ;;;;;;;;;;;;;;
+  ;;; temporary code for testing
 
 (require '(clojure.contrib [json :as json] [io :as io]))
 

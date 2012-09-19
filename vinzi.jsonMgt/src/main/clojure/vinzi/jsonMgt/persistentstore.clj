@@ -1,6 +1,10 @@
 (ns vinzi.jsonMgt.persistentstore)
 
 
+(def psInitialized (atom false))
+
+(defn ps-initialized? []
+  @psInitialized)
 
 ;; The interface to the persistant storage
 ;;   - database OR
@@ -98,6 +102,7 @@
    getTrackInfo getCommit getPatches
    dropLastCommit dropTrackInfo
    closeDatabase]
+  
   (def ps_initDatabase initDatabase)
   (def ps_callWithConnection callWithConnection)
   (def ps_writeErrorEntry writeErrorEntry)
@@ -114,6 +119,8 @@
   (def ps_dropLastCommit dropLastCommit)
   (def ps_dropTrackInfo dropTrackInfo)
   (def ps_closeDatabase closeDatabase)
+
+  (swap! psInitialized (fn [_] true))
   )
 
 
@@ -123,14 +130,14 @@
   {:pre [(= (type target-ns) java.lang.String)
 	 (= (type prefix) java.lang.String)]}
   (let [postfix (list "initScheme"
-		    "writeErrorEntry" "writeActionEntry"
-		    "createCommit" "writeCommit" "writePatches"
-		    "getAllTracks" "getTrackInfo" "getCommit" "getPatches"
-		    "dropLastCommit" "dropTrackInfo")
-	funcs  (map #(symbol target-ns %)
-		    (map #(str prefix %)  postfix))
-	vars   (map #(symbol "vinzi.jsonMgt.globals" %)
-		    (map #(str "ps_" %) postfix))
-	bindings (interleave vars funcs)
-	]
+                      "writeErrorEntry" "writeActionEntry"
+                      "createCommit" "writeCommit" "writePatches"
+                      "getAllTracks" "getTrackInfo" "getCommit" "getPatches"
+                      "dropLastCommit" "dropTrackInfo")
+        funcs  (map #(symbol target-ns %)
+                    (map #(str prefix %)  postfix))
+        vars   (map #(symbol "vinzi.jsonMgt.globals" %)
+                    (map #(str "ps_" %) postfix))
+        bindings (interleave vars funcs)
+        ]
     `(binding [~@bindings] ~body)))

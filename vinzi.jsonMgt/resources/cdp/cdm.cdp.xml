@@ -27,12 +27,14 @@
     "Initialize the system, read config-file and install interfaces."
     []
     (when (not @initialized?)
+      (info "Initialize the CDM.")
       (swap! initialized? (fn [_] true))
       (info jmgt/introMessage)
       (glb/setDefPostfix cdfdePostfix)
 
-	  ;; select the persistent-storage backend (and initialize the databases when needed)
-       (ips/init-persistentstore databaseCfg)))
+	   ;; select the persistent-storage backend (and initialize the databases when needed)
+       (ips/init-persistentstore databaseCfg)
+       (info "Initialization of the CDM finished." )))
 
 
 (defn get-command-rec 
