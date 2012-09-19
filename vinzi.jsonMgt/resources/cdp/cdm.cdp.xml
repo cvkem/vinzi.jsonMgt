@@ -8,9 +8,9 @@
   	       '(clojure.java [jdbc :as sql]))
   (require  '(vinzi.pentaho [connect :as conn])
   			'(vinzi.jsonMgt
-;;	     	  [hibernate :as hibps]
 	     	  [core :as jmgt]
 	     	  [globals :as glb]
+	     	  [persistentstore :as ps]
 	     	  [init-persistentstore :as ips]))
 	     
   (def initialized? (atom false))
@@ -19,9 +19,17 @@
 
   (def cdfdePostfix ".cdfde")
 
-  (def databaseCfg {:database_interface "hibernate"
-  ;; further options for the dabase can be intered below as key-value pairs.
-  })
+  (def databaseCfg {:database_interface "sql"   ;; other option is "hibernate"
+  					   :db {
+ 							:classname     "org.postgresql.Driver",
+  					   		:subprotocol   "postgresql",
+  							:db-host		"localhost"
+  							:db-port		"9432"
+  							:db-name		"cdm"
+  							:user			"tos"
+  							:password		"tos-user"
+  					   }
+  	})
   
   (defn initialize
     "Initialize the system, read config-file and install interfaces."
@@ -47,9 +55,9 @@
         				  par (if (and (= (count par) 1) (= (first par) "")) '() par)]
     					par))
   		action (str/lower-case (str/trim (:action params)))
-        src    (get-param "source")
-        dst    (get-param "destinations")
-        msg    (get-param params)]
+        src    (get-param :source)
+        dst    (get-param :destinations)
+        msg    (get-param :msg)]
     {:command action
      :src  src
      :dst  dst
@@ -62,15 +70,15 @@
     (initialize)
     (let [lpf "(process-jsonMgt-command): "
     	  commandRec (get-command-rec params)
-          action     (:action commandRec)]
+          command     (:command commandRec)]
       (letfn [(switch-to-help-modus []
                                     (println "switch help modus true")
                                     (swap! helpModus (fn [_] true))
                                     (str "Click a command button to view help.\n"
                                          "Click help again for an overview of the available commands)"))
               (procComm []
-                        (info "process command " action)
-                        (if (= action "help")
+                        (info "process command " command)
+                        (if (= command "help")
                           (switch-to-help-modus)
                             (let [response (with-out-str
                                              (jmgt/processCommand commandRec))
@@ -79,13 +87,15 @@
                                              (str "Succesfull performed command "
                                                   commandRec)
                                              response)]
-                              response)))
+                              (doall response))))
               (procHelp []
                         (swap! helpModus (fn [_] false))
                         (with-out-str (jmgt/processCommand {:command "help"
-                                                            :src  (list action)
+                                                            :src  (list command)
                                                             :dst  '()})))]
-             (let [response (if @helpModus (procHelp) (procComm))]
+             (let [response (if @helpModus 
+                               (procHelp) 
+                               (ps/ps_callWithinConnection (procComm)))]
                (info "Received result: " response)
                response))))
   

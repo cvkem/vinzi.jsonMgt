@@ -37,7 +37,9 @@
               "\n\tAdd an option \"database_interface\" with value "
                    "\n\t   \"hibernate\"  or \"sql\".")))
   
-  (when (ps/ps-initialized?)
-    (debug lpf "Now calling initDatabase.")
-    (ps/ps_initDatabase cfg))))
+    (if (ps/ps-bindings-initialized?)
+      (do 
+        (debug lpf "Now calling initDatabase.")
+        (ps/ps_initDatabase cfg))
+      (error lpf "No bindings for the persistent store yet."))))
 

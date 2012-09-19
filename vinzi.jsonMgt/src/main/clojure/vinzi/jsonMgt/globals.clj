@@ -36,6 +36,7 @@
   (def defPostfix pf))
 
 (def confirmReader (fn [msg] (println msg  "Assuming yes") true))
+
 (defn installConfirmReader
   "define confirmReader as function 'f'. "
   [f]

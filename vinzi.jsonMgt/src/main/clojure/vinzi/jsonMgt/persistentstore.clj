@@ -1,27 +1,26 @@
 (ns vinzi.jsonMgt.persistentstore)
 
+(def psRecInitialized (atom false))
 
-(def psInitialized (atom false))
-
-(defn ps-initialized? []
-  @psInitialized)
+(defn ps-bindings-initialized? []
+  @psRecInitialized)
 
 ;; The interface to the persistant storage
 ;;   - database OR
 ;;   - hibernate
 ;;
-(def ps_initDatabase (fn [] true))
+(def ^:dynamic ps_initDatabase (fn [] true))
 ;; signature: []
 
-(def ps_callWithConnection (fn [f & args] (println "wrapper not installed")))
+(def ^:dynamic ps_callWithConnection (fn [f & args] (println "wrapper not installed")))
 ;; signature: [f & args]
 
-(def ps_writeErrorEntry)
+(def ^:dynamic ps_writeErrorEntry)
 ;; signature: [errorEntry]
 ;; returns true on success
 ;; where errorEntry is {:datetime :user :command  :track  :error}
 
-(def ps_writeActionEntry)
+(def ^:dynamic ps_writeActionEntry)
 ;; signature: [actionEntry]
 ;; returns true on success
 ;; where actionEntry is {:datetime :user :action}
@@ -31,17 +30,17 @@
 ;;
 
 
-(def ps_createTrack)
+(def ^:dynamic ps_createTrack)
 ;; signature [trackName fileLocation]
 ;; returns  {:track_id :track_name :file_location}
 
-(def ps_writeCommit)
+(def ^:dynamic ps_writeCommit)
 ;; signature [trackId jsonContents dt]
 ;; returns
 ;; during a commit a new version is added to the tracks-table
 ;; (full copy of the json-file)
 
-(def ps_writePatches)
+(def ^:dynamic ps_writePatches)
 ;; signature:  [trackId patches dt]
 ;; During the commit a set of differences is written to the patches-table.
 
@@ -50,26 +49,26 @@
 ;;
 
 
-(def ps_getAllTracks)
+(def ^:dynamic ps_getAllTracks)
 ;; signature: []
 
-(def ps_getAllActions)
+(def ^:dynamic ps_getAllActions)
 ;; signature: []
 
-(def ps_getAllErrors)
+(def ^:dynamic ps_getAllErrors)
 ;; signature: []
 
-(def ps_getTrackInfo)
+(def ^:dynamic ps_getTrackInfo)
 ;; signature:  [trackName]
 ;; return a trackInfo record  {:track_id :file_location :track_name}
 
-(def ps_getCommit)
+(def ^:dynamic ps_getCommit)
 ;; signature:   [trackId depth]
 ;; returns  {:id :trackId :dt}
 ;; Get the data of the commit of at 'depth' steps from the last commit from the database.
 ;; The function returns exactly one record (not a sequence).
 
-(def ps_getPatches)
+(def ^:dynamic ps_getPatches)
 ;; signature:  [trackId dt]
 ;; Retrieve the patches since datetime 'dt'.
 ;; returns a list of patches (or nil)
@@ -79,18 +78,18 @@
 ;;  Functions to remove data from the databases
 ;;
 
-(def ps_dropLastCommit)
+(def ^:dynamic ps_dropLastCommit)
 ;; signature:  [commitId dt]
 ;; returns  the number of dropped patches.
 
 
-(def ps_dropTrackInfo)
+(def ^:dynamic ps_dropTrackInfo)
 ;; signature:  [trackId]
 ;; returns:  nil on failure.
 ;; Drop the track-info record for track_id = 'trackId'.
 ;; Assume that all commits have been dropped already. No checks performed!
 
-(def ps_closeDatabase)
+(def ^:dynamic ps_closeDatabase)
 ;; signature:  []
 
 (defn rebindPersistentStore
@@ -120,7 +119,7 @@
   (def ps_dropTrackInfo dropTrackInfo)
   (def ps_closeDatabase closeDatabase)
 
-  (swap! psInitialized (fn [_] true))
+  (swap! psRecInitialized (fn [_] true))
   )
 
 

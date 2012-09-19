@@ -853,7 +853,10 @@
 Assume that the sql-connection is already established."
   [statement]
   (let [lpf "(processCommand): " 
-        comm (str/lower-case (:command statement))
+        comm (:command statement)
+        comm (if (string? comm) 
+               (str/lower-case comm)
+               (error lpf "Command should be string. Current type is: " (type comm) "  and value " comm))
         expand? (not (contains? dontExpandComm comm))]
     (letfn [(get-track-item [theKey]
                             (let [{args theKey} statement]

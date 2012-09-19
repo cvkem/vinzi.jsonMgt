@@ -27,7 +27,7 @@
 ;;  hibernate and database.
 
 ;; default settings using an in-memory hypersonic database
-(def db {
+(def ^:dynamic  db {
 	 :classname "org.hsqldb.jdbc.JDBCDriver"
 	 :subprotocol "hsqldb"
 	 :subname  "//localhost"
@@ -39,10 +39,10 @@
 			  db-host db-port db-name
 			  user password]}]
  (def db {:classname classname ; must be in classpath
-	  :subprotocol subprotocol
-	  :subname (str "//" db-host ":" db-port "/" db-name)
-	  :user user
-	  :password password}))
+          :subprotocol subprotocol
+          :subname (str "//" db-host ":" db-port "/" db-name)
+          :user user
+          :password password}))
 
 
 (def dbs
@@ -82,9 +82,10 @@
 
 
 
-;; who uses this function??
+;; Installs a schema in the default in-memory hsqldb ??
 (defn installInMemoryDb []
-  (sql/with-connection db (sql/do-commands
+  (sql/with-connection db 
+     (sql/do-commands
 			   (format "CREATE SCHEMA %s;" (:db_scheme dbs)))))
 
 
@@ -92,14 +93,16 @@
   (def dbs (into dbs (into dbName dbType))))
 
 (declare initScheme)
+
 (defn db_call-with-connection [f & args]
-  (sql/with-connection db
-        (if (initScheme)
-;;        (if (ps/ps_initScheme)
-	  (let [res (apply f args)]
-;;	    (println "Call within call-with-database returned: " res)
-	    res)
-	  (println "Initialization of Scheme aborted"))))
+  (let [lpf "(call-with-connection): "]
+    (sql/with-connection db
+                         (if (initScheme)
+                           ;;        (if (ps/ps_initScheme)
+                           (let [res (apply f args)]
+                             ;;	    (println "Call within call-with-database returned: " res)
+                             res)
+                           (error lpf "Initialization of Scheme aborted")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,10 +114,10 @@
   "translate a database-record 'rec' to a Patch object"
   [rec]
   (let [{:keys [path action patchkey value]} rec
-	pathList (getPathList path)
-	act      (keyword action)
-	pKey     (keywordize patchkey)
-	val      (json/read-json value) ]
+        pathList (getPathList path)
+        act      (keyword action)
+        pKey     (keywordize patchkey)
+        val      (json/read-json value) ]
     (Patch. pathList act pKey val)))
 
 
@@ -191,56 +194,60 @@
 
 ;; only used internally (called by 'call-with-database')
 (defn initScheme
-  "Initialize a scheme (or database) by creating the all five tables. The function only returns true if all five operations are succesfull. An action-log entry is generated for each table, so the action-table is created first."
+  "Initialize a scheme (or database) by creating the all five tables. 
+   The function only returns true if all five operations are succesfull. 
+   An action-log entry is generated for each table, so the action-table is created first."
   []
-  (letfn [(checkTable [tableName & tableSpecs]
-	    (if (existsTable tableName)
-	      true
-	      (if (confirmReader (format "Create table '%s'" tableName))
-		(let [dt (getCurrDateTime)]
-		  ;; (println "Table specs are" tableSpecs)
-		  ;; (println " TEST apply: " (apply str tableName tableSpecs))
-		  ;; (flush)
-		  (apply sql/create-table tableName tableSpecs)
-		  (writeActionEntry "--general--" dt (format "Created table '%s'" tableName)))
-		false)))
-	  ]
-;    (println (format "\nChecking whether scheme '%s' is initialized." (:db_scheme dbs)))
-  (if (and (checkTable (getActionLogDb)
-		       [:id    (str (:autokey dbs) (:primary dbs))]
-		       [:datetime  (:datetime dbs)]
-           [:track      (:text dbs)]
-		       [:d_user  (:text dbs)]
-		       [:action (:text dbs)])
-	   (checkTable  (getErrorLogDb)
-			[:id    (str (:autokey dbs) (:primary dbs))]
-			  [:datetime  (:datetime dbs)]
-			  [:d_user  (:text dbs)]
-			  [:command  (:text dbs)]
-			  [:track  (:text dbs)]
-			  [:error (:text dbs)])
-	   (checkTable (getTrackInfoDb)
-		         [:track_id    (:autokey dbs)]
-			 [:file_location (:text dbs)]
-			 [:track_name  (str (:text dbs) (:primary dbs))])
-	   (checkTable (getCommitDb)
-		       [:id    (str (:autokey dbs) (:primary dbs))]
-		       [:track_id  (:keytype dbs)]
-		       [:datetime  (:datetime dbs)]
-		       [:contents  (:longtext dbs)])
-	   (checkTable (getPatchDb)
-		       [:id    (str (:autokey dbs) (:primary dbs))]
-		       [:track_id  (:keytype dbs)]
-		       [:datetime  (:datetime dbs)]
-		       [:path  (:longtext dbs)]
-		       [:action  (:text dbs)]
-		       [:patchkey  (:text dbs)]
-		       [:value  (:longtext dbs)]) )
-    true
-    false)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+  (let [lpf "(initScheme): "]
+    (letfn [(checkTable [tableName & tableSpecs]
+                        (debug lpf "check table: " tableName) 
+                        (if (existsTable tableName)
+                          true
+                          (if (confirmReader (format "Create table '%s'" tableName))
+                            (let [dt (getCurrDateTime)]
+                              ;; (println "Table specs are" tableSpecs)
+                              ;; (println " TEST apply: " (apply str tableName tableSpecs))
+                            ;; (flush)
+                              (apply sql/create-table tableName tableSpecs)
+                              (writeActionEntry "--general--" dt (format "Created table '%s'" tableName)))
+                            false)))
+            ]
+           ;    (println (format "\nChecking whether scheme '%s' is initialized." (:db_scheme dbs)))
+           (if (and (checkTable (getActionLogDb)
+                                [:id    (str (:autokey dbs) (:primary dbs))]
+                                [:datetime  (:datetime dbs)]
+                                [:track      (:text dbs)]
+                                [:d_user  (:text dbs)]
+                                [:action (:text dbs)])
+                    (checkTable  (getErrorLogDb)
+                                 [:id    (str (:autokey dbs) (:primary dbs))]
+                                 [:datetime  (:datetime dbs)]
+                                 [:d_user  (:text dbs)]
+                                 [:command  (:text dbs)]
+                                 [:track  (:text dbs)]
+                                 [:error (:text dbs)])
+                    (checkTable (getTrackInfoDb)
+                                [:track_id    (:autokey dbs)]
+                                [:file_location (:text dbs)]
+                                [:track_name  (str (:text dbs) (:primary dbs))])
+                    (checkTable (getCommitDb)
+                                [:id    (str (:autokey dbs) (:primary dbs))]
+                                [:track_id  (:keytype dbs)]
+                                [:datetime  (:datetime dbs)]
+                                [:contents  (:longtext dbs)])
+                    (checkTable (getPatchDb)
+                                [:id    (str (:autokey dbs) (:primary dbs))]
+                                [:track_id  (:keytype dbs)]
+                                [:datetime  (:datetime dbs)]
+                                [:path  (:longtext dbs)]
+                                [:action  (:text dbs)]
+                                [:patchkey  (:text dbs)]
+                                [:value  (:longtext dbs)]) )
+             true
+             false))))
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
 ;;  Functions to write data to the databases
 ;;
 
@@ -393,36 +400,37 @@
    (format "DELETE FROM %s WHERE track_id = %s;" (getTrackInfoDb) trackId)))
 
 (defn db_initDatabase [cfg]
-  (if cfg
-    (do
-      (generateDb (:db cfg))
-      (let [{:keys [dbName dbType]} cfg]
-	(setDbsRecord dbName dbType))
-      (println "configured database based on config-file."))
-    (do
-      (println "Install in-memory temporary database for demonstation.")
-      (println "WARNING:  All actions will be disposed at shutdown.")
-      (installInMemoryDb)))
-  
-  (when printPln
-    (print "Database set as: ")
-    (pprint db)
-    (print "\nDatabase parameters set as: ")
-    (pprint dbs)))
+  (let [lpf "(db_initDatabase): "]
+    (if cfg
+      (do
+        ;; adjust the global db-record
+        (generateDb (:db cfg))
+        (let [{:keys [dbName dbType]} cfg]
+          (setDbsRecord dbName dbType))
+        (debug lpf "configured database based on config-file db=" (with-out-str (pprint db))))
+      (do
+        (warn lpf "Install in-memory temporary database for demonstation."
+               "WARNING:  All actions will be disposed at shutdown.")
+        (installInMemoryDb)))
+    
+      (trace lpf "Database set as: \n\t" db
+             "\n\tDatabase parameters set as: " (with-out-str (pprint dbs)))))
 
 (defn db_closeDatabase []
-  (println "No shutdown actions for database needed."))
+  (let [lpf "(closeDatabase): "]
+    (debug lpf "No shutdown actions for database needed.")))
 
 
 (defn installDatabaseAsPS []
   (ps/rebindPersistentStore
-   db_initDatabase db_call-with-connection
-   db_writeErrorEntry db_writeActionEntry
-   db_createTrack db_writeCommit db_writePatches
-   db_getAllTracks db_getAllActions db_getAllErrors
-   db_getTrackInfo db_getCommit db_getPatches
-   db_dropLastCommit db_dropTrackInfo
-   db_closeDatabase))
+    db_initDatabase     
+    db_call-with-connection
+    db_writeErrorEntry db_writeActionEntry
+    db_createTrack db_writeCommit db_writePatches
+    db_getAllTracks db_getAllActions db_getAllErrors
+    db_getTrackInfo db_getCommit db_getPatches
+    db_dropLastCommit db_dropTrackInfo
+    db_closeDatabase))
 
 
 
