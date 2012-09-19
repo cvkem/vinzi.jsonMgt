@@ -1,104 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cdp>
  <clojure namespace="vinzi.cdp.ns.cdm">
- 	;; include some libraries
-  (use 'clojure.tools.logging)
-;;(use       'vinzi.cdm.globals)
-  (require '(clojure [string :as str])
-  	       '(clojure.java [jdbc :as sql]))
-  (require  '(vinzi.pentaho [connect :as conn])
-  			'(vinzi.jsonMgt
-	     	  [core :as jmgt]
-	     	  [globals :as glb]
-	     	  [persistentstore :as ps]
-	     	  [init-persistentstore :as ips]))
-	     
-  (def initialized? (atom false))
-
-  (def helpModus (atom false))
-
-  (def cdfdePostfix ".cdfde")
-
+  (use 'clojure.tools.logging
+       'vinzi.cdm.cdm-main)
+  (require '(vinzi.pentaho [connect :as pConn]))
+  
   (def databaseCfg {:database_interface "sql"   ;; other option is "hibernate"
-  					   :db {
- 							:classname     "org.postgresql.Driver",
-  					   		:subprotocol   "postgresql",
-  							:db-host		"localhost"
-  							:db-port		"9432"
-  							:db-name		"cdm"
-  							:user			"tos"
-  							:password		"tos-user"
-  					   }
-  	})
+                    :db {:classname     "org.postgresql.Driver"
+                         :subprotocol   "postgresql",
+                         :db-host		"localhost"
+                         :db-port		"5432"
+                         :db-name		"cdm"
+                         :user			"tos"
+                         :password		"tos-user"
+                         }})
   
-  (defn initialize
-    "Initialize the system, read config-file and install interfaces."
-    []
-    (when (not @initialized?)
-      (info "Initialize the CDM.")
-      (swap! initialized? (fn [_] true))
-      (info jmgt/introMessage)
-      (glb/setDefPostfix cdfdePostfix)
-
-	   ;; select the persistent-storage backend (and initialize the databases when needed)
-       (ips/init-persistentstore databaseCfg)
-       (info "Initialization of the CDM finished." )))
-
-
-(defn get-command-rec 
- "Generate a command for jsonMgt based on action and the :src and :dst from the params.
-  Further parameter-checking will be added."
-  [params]
-  (let [get-param (fn [theKey] 
-  					(let [par (get params theKey) 
-        				  par (when par (str/split (str/trim par) #"\s+"))
-        				  par (if (and (= (count par) 1) (= (first par) "")) '() par)]
-    					par))
-  		action (str/lower-case (str/trim (:action params)))
-        src    (get-param :source)
-        dst    (get-param :destinations)
-        msg    (get-param :msg)]
-    {:command action
-     :src  src
-     :dst  dst
-     :msg  msg}))
-
-
-  (defn process-jsonMgt-command
-    "Collect the relavant data and call the jsonMgt."
-    [params]
-    (initialize)
-    (let [lpf "(process-jsonMgt-command): "
-    	  commandRec (get-command-rec params)
-          command     (:command commandRec)]
-      (letfn [(switch-to-help-modus []
-                                    (println "switch help modus true")
-                                    (swap! helpModus (fn [_] true))
-                                    (str "Click a command button to view help.\n"
-                                         "Click help again for an overview of the available commands)"))
-              (procComm []
-                        (info "process command " command)
-                        (if (= command "help")
-                          (switch-to-help-modus)
-                            (let [response (with-out-str
-                                             (jmgt/processCommand commandRec))
-                                  response (if (or (nil? response)
-                                                   (= response ""))
-                                             (str "Succesfull performed command "
-                                                  commandRec)
-                                             response)]
-                              (doall response))))
-              (procHelp []
-                        (swap! helpModus (fn [_] false))
-                        (with-out-str (jmgt/processCommand {:command "help"
-                                                            :src  (list command)
-                                                            :dst  '()})))]
-             (let [response (if @helpModus 
-                               (procHelp) 
-                               (ps/ps_callWithinConnection (procComm)))]
-               (info "Received result: " response)
-               response))))
-  
+	     
  </clojure>
 
 
@@ -122,8 +39,12 @@
 	<clojure>
 	(fn []
 	  (initialize)   ;; force initialization (if not performed already)
-      (conn/get-solution-folder)
-    )
+	  (let [dr (pConn/get-solution-folder)
+	        dr (if (= (last dr) (first jmgt/theSep))   ;; ensure is terminated by a file-separator.
+                    dr
+                    (str dr theSep))]
+	        ]
+	  dr)
 	
 	</clojure>
    <params>

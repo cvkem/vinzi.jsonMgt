@@ -158,14 +158,15 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>jsonedit</groupId>
-			<artifactId>jsonedit</artifactId>
-			<version>1.0.1</version>
-		</dependency>
-		<dependency>
 			<groupId>clojure.prxml</groupId>
 			<artifactId>clojure.prxml</artifactId>
 			<version>0.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>vinzi</groupId>
+			<artifactId>vinzi.cdp</artifactId>
+			<version>0.0.2-SNAPSHOT</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 	<build>

@@ -5,15 +5,16 @@
     (:use [vinzi.json.jsonZip :only [isJson?]]
           [vinzi.json.jsonDiff :only [getPathList keywordize getPathStrPatch]])
         ;;:only [Patch]
-  (:require  [vinzi.jsonMgt [persistentstore :as ps]]	
-	     [clojure.java
- 	      [jdbc :as sql]]
-	     [clojure.data
-	      [json :as json]])
-  (:import [vinzi.json.jsonDiff Patch]
-	   [java.io File]
-	   [java.util Date]
-	   [java.sql SQLException Timestamp])
+  (:require  [vinzi.jsonMgt [persistentstore :as ps]]
+             [clojure.string :as str]
+             [clojure.java
+              [jdbc :as sql]]
+             [clojure.data
+              [json :as json]])
+        (:import [vinzi.json.jsonDiff Patch]
+                 [java.io File]
+                 [java.util Date]
+                 [java.sql SQLException Timestamp])
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,8 +46,8 @@
           :password password}))
 
 
-(def dbs
-     {:db_scheme    "test"
+(def ^:dynamic dbs
+     {:db_scheme    nil   ;; default is no scheme (use public scheme)
       :commit_db    "commits"
       :patch_db     "patches"
       :no_prefix    ""
@@ -84,9 +85,15 @@
 
 ;; Installs a schema in the default in-memory hsqldb ??
 (defn installInMemoryDb []
+  (let [db_scheme (str/trim (str (:db_scheme dbs)))
+        db_scheme (if (seq db_scheme)
+                    db_scheme
+                    (do
+                      (switchDbsScheme "test")
+                      (:db_scheme dbs)))]
   (sql/with-connection db 
      (sql/do-commands
-			   (format "CREATE SCHEMA %s;" (:db_scheme dbs)))))
+			   (format "CREATE SCHEMA %s;" db_scheme)))))
 
 
 (defn setDbsRecord [dbName dbType]
@@ -135,19 +142,16 @@
 
 
 (defn getDbName*
+  "Return the database name, prefixed by the scheme if set."
   [dbNameKeyw]
-  (str (:db_scheme dbs) "." (name dbNameKeyw)))
+  (let [db_scheme (when-let [db_scheme (:db_scheme dbs)]
+                    (str/trim db_scheme))
+        nme (name dbNameKeyw)]
+    (if (seq db_scheme)  
+      (str db_scheme "." nme)
+      nme)))
 
-;; ([data]
-  ;;    (if (keyword? data)
-  ;;      (getDbName* data "")
-  ;;      (getDbName* :no_prefix data)))
-  ;; ([prefix_id name]
-  ;;    (let [trackName name
-  ;; 	   res       (str (:db_scheme dbs) "." (prefix_id dbs) trackName)]
-  ;;      (assert (keyword? prefix_id))
-  ;;      (pln "getDbName: translating prefix " prefix_id " + " name " --> " res)
-  ;;      res)))
+
 
 (defn getCommitDb [] (getDbName* :cdm_commit))
 (defn getPatchDb [] (getDbName* :cdm_dbpatch))

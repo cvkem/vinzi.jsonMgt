@@ -17,7 +17,7 @@
 	   [vinzi.json.jsonDiff Patch]
 	   [java.io File BufferedReader]))
 
-
+;; usage of the next few lines should be replaced by vFile.
 (def regExpSepator  (if (= File/separator "\\")
 			#"\\" #"/"))
 (def searchSep (if (= File/separator "\\")
@@ -58,6 +58,12 @@
 
 ;;(defn setDocRootCurrentDir []
 ;;  (def dbs (assoc dbs :doc_root (str (.getCanonicalPath (File. ".")) "/"))))
+
+(defn set-doc-root [dr]
+  (let [dr (if (= (last dr) (first theSep))
+             dr
+             (str dr theSep))]
+    (def doc_root dr)))
 
 (defn configure-doc-root [cfg]
    (let [lpf "(configure-doc-root): "]
@@ -751,7 +757,7 @@
   (generate-log-lines (ps_getAllErrors) args))
 
 
-(def introMessage "Community Dashboard Manager v0.9 for the synchroneous managemnent of Pentaho cdfde dashboards\n developed by Vinzi.nl (2011-2012).\n Type help to get a general introduction.") 
+(def introMessage "Community Dashboard Manager v0.9 for the synchroneous management of Pentaho cdfde dashboards\n developed by Vinzi.nl (2011-2012).\n Type help to get a general introduction.") 
 
 (def helpMessages
      {

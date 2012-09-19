@@ -15,7 +15,7 @@
 (defn init-persistentstore "Select one of the database-interfaces, install the interface and initialize the database"
   [cfg]
   (let [lpf "(init-persistentstore): " 
-        _ (debug lpf "  with paramters: " (with-out-str (pprint cfg)))
+        _ (debug lpf "  with parameters: " (with-out-str (pprint cfg)))
         dbInt (:database_interface cfg)]
     (if (= dbInt "hibernate")
       (do
