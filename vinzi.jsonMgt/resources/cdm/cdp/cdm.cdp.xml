@@ -2,8 +2,7 @@
 <cdp>
  <clojure namespace="vinzi.cdp.ns.cdm">
   (use 'clojure.tools.logging
-       'vinzi.cdm.cdm-main)
-  (require '(vinzi.pentaho [connect :as pConn]))
+       'vinzi.cdm.cdm-main))
   
   (def databaseCfg {:database_interface "sql"   ;; other option is "hibernate"
                     :db {:classname     "org.postgresql.Driver"
@@ -37,15 +36,7 @@
      description="Get the docRoot (base of the pentaho solution folder in the file-system)."
      >
 	<clojure>
-	(fn []
-	  (initialize)   ;; force initialization (if not performed already)
-	  (let [dr (pConn/get-solution-folder)
-	        dr (if (= (last dr) (first jmgt/theSep))   ;; ensure is terminated by a file-separator.
-                    dr
-                    (str dr theSep))]
-	        ]
-	  dr)
-	
+	(get-doc-root)
 	</clojure>
    <params>
    </params>

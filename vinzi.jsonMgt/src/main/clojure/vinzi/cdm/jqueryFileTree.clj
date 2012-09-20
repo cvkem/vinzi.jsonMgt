@@ -2,7 +2,9 @@
   (:use	   [clojure pprint]
            [clojure.tools logging])
   (:use [vinzi.cdm globals])
-  (:require [clojure [string :as str :only [replace]]])
+  (:require 
+    [clojure [string :as str :only [replace]]]
+    [vinzi.jsonMgt.core :as jmgt :only [doc_root]])
   (:import [java.io File]))
 
 
@@ -35,7 +37,7 @@
 ;  ;; 	       (when (and (nil? docRoot) (< waitMs 5000))
 ;  ;; 		 (Thread/sleep intMs)
 ;  ;; 		 (recur (+ waitMs intMs))))]
-;  ;;   (println "In jqGetDocRoot waited " wait " ms.\b\tReturning response: " docRoot)
+;  ;;   (debug lpf"In jqGetDocRoot waited " wait " ms.\b\tReturning response: " docRoot)
 ;  ;; server is single-threaded, so transfered wait-loop to javascript.
 ;  (let [lpf "(jqGetDocRoot): "
 ;        response (if (nil? docRoot) "" docRoot)]
@@ -49,25 +51,19 @@
   (letfn [(getLocation [req]
 		       ;; assume request points to a sub-path of 'docRoot'
 		       (let [loc (get (:params req) "dir" "")
-;; 			     loc (if (.startsWith loc docRoot) loc
-;; 				     (do
-;; 				       (println "Location " loc
-;; 						" is not allowed. Switch to: "
-;; 						docRoot) 
-			     ;; 				       docRoot))
-			     ;; PATCH because we don't have a proper
-			     ;; install procedure yet.
-			     ;; (temporary security leak)
-			     _ (when (nil? docRoot)
-				 (println "CODE TO BE REMOVED!!")
-				 (def docRoot loc))
+
+;			     _ (when (nil? docRoot)
+;                 (debug lpf"CODE TO BE REMOVED!!")
+;                 (def docRoot loc))
 			     ;; prepend doc-root only to relative path
-			     fc  (first loc)
+
+           ;; use vFile for a more simple solution
+           fc  (first loc)
 			     isAbs (or (= fc \/) (= fc \\))
-			     loc (if isAbs loc (str docRoot loc))]
-           (println "looking for loc" loc)
-           (println "   is directory: " (.isDirectory (File. loc)))
-           (println "   is file: " (.isFile (File. loc)))
+			     loc (if isAbs loc (str jmgt/doc_root loc))]
+           (debug lpf"looking for loc" loc
+                  "\n\tis directory: " (.isDirectory (File. loc))
+                  "\n\tis file: " (.isFile (File. loc)))
            (if changeSep
              (str/replace loc "/" File/separator)
              loc)))
@@ -91,7 +87,7 @@
                        path (if dir? (str path "/") path)]
                    
                    (when  (not (or dir? file?))
-                     (println "Path: " path
+                     (debug lpf"Path: " path
                               " is neither file nor directory!!"))
                    {:dir? dir?
                     :path path
@@ -112,7 +108,7 @@
                     ;; return files (directories first)
                     (concat (sortFDlist (get files true))
                             (sortFDlist (get files false))))
-                  (println "Error: no location passed "
+                  (debug lpf"Error: no location passed "
                            "by jqueryFileViewer")))
 	  ]
          (let [loc   (getLocation req)
