@@ -50,9 +50,9 @@
   
   
   
-(defn genFileView "Wrapper to ensure initialization." [req]
+(defn genFileView "Wrapper to ensure initialization." [params]
   (initialize)
-  (jqft/jqGenerateFileView req))
+  (jqft/jqGenerateFileView params))
 
 
 
@@ -116,7 +116,9 @@
         tbl (take maxTblRows tbl)  ;; limit length
         html (generate-html-table tbl)]
     (println "\n\nResulted in html: " html)
-    (cgl/getHtmlResponse html)))
+;;    (cgl/getHtmlResponse html)
+    html
+    ))
 
 
 (defn process-jsonMgt-command
@@ -154,3 +156,5 @@
              (info "Received result: " response)
              response))))
   
+
+

@@ -50,7 +50,8 @@
   (let [lpf "(jqGenerateFileView): "]
   (letfn [(getLocation [req]
 		       ;; assume request points to a sub-path of 'docRoot'
-		       (let [loc (get (:params req) "dir" "")
+		       (let [loc (:dir req)
+               ;;loc (get (:params req) "dir" "")
 
 ;			     _ (when (nil? docRoot)
 ;                 (debug lpf"CODE TO BE REMOVED!!")
@@ -115,5 +116,7 @@
                files (getDirFiles loc)
                files (map getHtml files)
                body (format fvFmt (apply str files))]
-           (getHtmlResponse body)))))
+           ;; getHtmlResponse only needed when serving via jetty (direct on server)!!
+           ;;(getHtmlResponse body)
+           body))))
 

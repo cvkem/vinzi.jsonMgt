@@ -37,6 +37,7 @@
 			<groupId>org.clojure</groupId>
 			<artifactId>java.jdbc</artifactId>
 			<version>0.2.3</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.clojure</groupId>
@@ -47,11 +48,13 @@
 			<groupId>org.clojure</groupId>
 			<artifactId>tools.logging</artifactId>
 			<version>0.2.4</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 			<version>1.6.5</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
@@ -144,6 +147,7 @@
 			<groupId>vinzi</groupId>
 			<artifactId>vinzi.tools</artifactId>
 			<version>0.2.0-SNAPSHOT</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate</groupId>
@@ -202,7 +206,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>vinzi.cdm.core</mainClass>
+							<mainClass>vinzi.jsonMgt.core</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -218,9 +222,16 @@
 					</execution>
 				</executions>
 				<configuration>
+				<!--  excludes don't function. Provided tag on clojures fails too.
+				    <excludes>
+					    <exlude>clojure/core*</exlude>
+					    <exlude>clojure/lang*</exlude>
+					    <exlude>clojure/java*</exlude>
+				    </excludes>
+				    -->
 					<archive>
 						<manifest>
-							<mainClass>vinzi.cdm.core</mainClass>
+							<mainClass>vinzi.jsonMgt.core</mainClass>
 						</manifest>
 					</archive>
 					<descriptorRefs>

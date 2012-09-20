@@ -2,7 +2,8 @@
 <cdp>
  <clojure namespace="vinzi.cdp.ns.cdm">
   (use 'clojure.tools.logging
-       'vinzi.cdm.cdm-main))
+       'vinzi.cdm.cdm-main)
+       
   
   (def databaseCfg {:database_interface "sql"   ;; other option is "hibernate"
                     :db {:classname     "org.postgresql.Driver"
@@ -49,12 +50,10 @@
      description="Generate data to show the files in a viewer."
      >
 	<clojure>
-	(fn [params]
-	   (info "genFileView still needs to be implemented")
-	  "to be implemented"
-    )
+	(genFileView params)
 	</clojure>
    <params>
+     <param id="dir"/>
    </params>
  </action>
 

@@ -58,7 +58,8 @@ font-size: 80%;
 }
 
 #cdmLogo {}
-#vinziLogo { float:right;
+.vinziLogo { float:right;
+        height: 98px;
 	     width:250px;}
 
 /* extensions of the jqueryFileTree */

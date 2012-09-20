@@ -40,6 +40,8 @@ if(jQuery) (function($){
 			if( o.script == undefined ) o.script = 'jqueryFileTree.php';
 			if( o.folderEvent == undefined ) o.folderEvent = 'click';
 			if( o.expandSpeed == undefined ) o.expandSpeed= 500;
+			// CvK: adding a skeleton with default parameters to pass cdp specific parameters
+			if (o.skeleton == undefined) o.skeleton = {};
 			if( o.collapseSpeed == undefined ) o.collapseSpeed= 500;
 			if( o.expandEasing == undefined ) o.expandEasing = null;
 			if( o.collapseEasing == undefined ) o.collapseEasing = null;
@@ -51,7 +53,10 @@ if(jQuery) (function($){
 				function showTree(c, t) {
 					$(c).addClass('wait');
 					$(".jqueryFileTree.start").remove();
-					$.post(o.script, { dir: t }, function(data) {
+					o.skeleton.dir = t;
+					$.post(o.script, o.skeleton, function(data) {
+						// CvK: the cdp always returns an array, so take first element.
+						data = data[0];
 						$(c).find('.start').html('');
 						$(c).removeClass('wait').append(data);
 						if( o.root == t ) 
