@@ -105,14 +105,16 @@
 
    
 (defn show-table
-  "Generate a html-table based on the 'tblSel' and the parameter in 'req'."
-  [req tblSel]
-  (let [params (:params req)
+  "Generate a html-table based on the 'tblSel' parameter."
+  [params]
+  (let [lpf "(show-table): " 
+        tblSel (:tblSel params)
         action (if (= tblSel "actions") "list-actions" "list-errors")
-        cmd (get-command-rec action params)
-        _ (println "going to execute command" cmd)
-        tbl (jmgt/processCommand cmd)
-        _ (println "\nReceived the list: " tbl)
+        cmd (get-command-rec {:action action
+                              :source (:source params)})
+        _ (debug lpf "going to execute command" cmd)
+        tbl (ps/ps_callWithConnection (partial jmgt/processCommand cmd))
+        _ (trace lpf "\nReceived the list: " tbl)
         tbl (take maxTblRows tbl)  ;; limit length
         html (generate-html-table tbl)]
     (println "\n\nResulted in html: " html)

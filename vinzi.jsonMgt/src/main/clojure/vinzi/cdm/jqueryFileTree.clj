@@ -20,7 +20,7 @@
 ;;(def docRoot "/home/cees/Clj/cdm-server/resources/static/")
 ;; start with a nil docroot. The first path provided is assumed
 ;; to be a docRoot
-(def  docRoot nil)
+;;(def  docRoot nil)
 
 ;(defn set-jqft-docRoot "Set the docRoot for the file tree viewer." [dr]
 ;  (def docRoot dr))
@@ -75,7 +75,7 @@
 	  (getPathStr [f]
                (->> f
                  (.getAbsolutePath)
-                 (drop (count docRoot))
+                 (drop (count jmgt/doc_root))
                  (apply str)))
 	  (getFileDescr [f]
                  (let [path (getPathStr f)

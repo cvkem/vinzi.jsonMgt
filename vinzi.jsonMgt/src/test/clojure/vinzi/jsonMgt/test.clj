@@ -117,7 +117,7 @@
                         (dbps/switchDb testDb)
                         (dbps/switchDbsScheme "unittest")
                         ;; configure doc-root with nil argument will put doc-root at current directory
-                        (configure-doc-root nil)
+                        (set-doc-root nil)
 ;;                        (dbps/setDocRootCurrentDir)
                         ;; proces this as tree seperate transactions (connections)
                         (sql/with-connection testDb

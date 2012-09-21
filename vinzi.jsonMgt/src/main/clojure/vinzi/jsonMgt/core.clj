@@ -9,8 +9,8 @@
 	      [zip :as zip]
 	      ;;
 	      [string :as str :only [lowercase replace replace-re trim]]]
-	     [clojure.java.io :as jio :only [resource]]
-	     [clojure.data.json :as json]
+	     ;;[clojure.java.io :as jio :only [resource]]
+      [clojure.data.json :as json]
 	     [clojure.java.io :as io]
       [vinzi.pentaho.genCda :as cda])
   (:import [java.sql SQLException]
@@ -31,6 +31,23 @@
   "Assumes name is a filename if it contains '.' or a file-separator character."
   [name]
   (re-find regExpIsFilename  name))  
+
+
+(defn set-doc-root [dr]
+  (if (seq dr)
+    (let [dr (if (= (last dr) (first theSep))
+               dr
+               (str dr theSep))]
+      (def doc_root dr))
+    (let [dir (File. ".")
+          currDir  (str (.getCanonicalPath dir) theSep)]
+      (def doc_root currDir))))
+
+;;; NOTE:  the configuration stuff below is not used anymore.
+;;;   configurations runs via .cdp.xml
+;;;   TODO: clean up code
+
+(comment ;; unused code  
 
 
 ;;
@@ -59,11 +76,6 @@
 ;;(defn setDocRootCurrentDir []
 ;;  (def dbs (assoc dbs :doc_root (str (.getCanonicalPath (File. ".")) "/"))))
 
-(defn set-doc-root [dr]
-  (let [dr (if (= (last dr) (first theSep))
-             dr
-             (str dr theSep))]
-    (def doc_root dr)))
 
 (defn configure-doc-root [cfg]
    (let [lpf "(configure-doc-root): "]
@@ -89,7 +101,7 @@
         (if (.exists (File. fname))
           fname
           (warn lpf "The configuration file " fname " does not exist")))
-      (if-let [resUrl  (jio/resource configFileName)]
+      (if-let [resUrl  (io/resource configFileName)]
         resUrl
       (do
         (info lpf "Could not locate the resource " configFileName
@@ -125,7 +137,7 @@
           (ps_initDatabase nil)
           (configure-doc-root nil)))))
 
-
+) ;; unused code
 
 
 ;;;;;;;;;;;;;;;;;;;

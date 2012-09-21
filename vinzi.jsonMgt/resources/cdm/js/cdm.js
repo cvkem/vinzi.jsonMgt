@@ -1,3 +1,13 @@
+
+
+/*
+ *  define some globals that will be exposed to cde and will be connected to the interface there.
+ */
+var srcBox, srcFv, dstBox, dstFv;
+
+
+
+
 function strObj(obj) {
   if ((typeof obj == 'string') ||
       (typeof obj == 'number') ||
@@ -17,12 +27,68 @@ function cdpExec(pars, updateFunc) {
         console.log("expected to receive string 'cdpFile'. Received: "+theCdpFile);
     var base="/pentaho/content/cdp/exec?"+theCdpFile;
     
-    alert ('Going to call  CDP with parameters: '+ strObj(pars));
+//    alert ('Going to call  CDP with parameters: '+ strObj(pars));
     
     $.post(base, pars, updateFunc);
     
     return;
 };
+
+
+function updateTable(tblSel, srcSel, targetDiv) {
+	  var pars = {accessId: 'showTable',
+			       tblSel: tblSel,
+			   		source: srcSel}
+	  cdpExec(pars, function(data, s) {
+		  				if (data.length > 1)
+		  					alert('can only handle first element. Discarding'+data.slice(1));
+		  				var data = data[0];  // take first element
+		  				$(targetDiv).html(data);
+		      });
+	};
+
+	function updateLogTables(srcSel) {
+	  /*
+	    update log-table and error-table
+	   */
+	//  alert('running updates'+srcSel);
+	  updateTable('actions', srcSel, '#actionDiv');
+	  updateTable('errors', srcSel, '#errorDiv');
+	};
+
+	var partialCommand = null;  // used to store command that still needs a destination via the 'destPopup' window 
+
+	// needs a destination value.
+	function finish_partialCommand() {
+		if (partialCommand == null) {
+			alert(" STRANGE!! no command available");
+			return;
+		}
+		partialCommand.dst = dstBox.getValue();
+
+	    cdpExec(partialCommand, function (d, s) {
+            if (d.length > 0)
+            	alert(d);
+            updateLogTables(srcBox.getValue);
+        });
+		partialCommand = null;
+		return;
+	};
+
+ function dst_ok_button () { 
+	    dstFv.accept();
+	    finish_partialCommand();
+	    destPopup.hide();
+	    return;};
+
+ function dst_cancel_button () { 
+	    dstFv.reject();
+	    partialCommand = null;  // operation cancelled
+	    destPopup.hide();
+	    return;
+	};
+	
+
 
 /*
   Below are the interface functions that collect the parameters and
@@ -30,23 +96,49 @@ function cdpExec(pars, updateFunc) {
   (implementation of the dashboard buttons)
 */
 
-function createFunc () 
-{
+	
+function run_action (action) {
+	    var pars = {accessId: 'process-jsonMgt-command',
+	                  action: action,
+	                  source: "",
+	                  destinations: "",
+	                  msg: ""  };
+	                                            
+	    cdpExec(pars, function (d, s) {
+	    	                            if (d.length > 0)
+	    	                            	alert(d);
+//	                                    updateLogTables(srcBox.getValue);
+	                                });
+	   return;
+	};
+	
+	
+function run_action_src (action) {
     var pars = {accessId: 'process-jsonMgt-command',
-                  action: 'create',
-                  source: selectedSrc,
+                  action: action,
+                  source: srcBox.getValue(),
                   destinations: "",
                   msg: ""  };
                                             
     cdpExec(pars, function (d, s) {
-                                    Dashboards.fireChange('refreshTables', refreshTables+1);
-                                    alert('executed a create-track for src= '+selectedSrc+
-                                    ' received d='+strObj(d)+' and s='+strObj(s));
+    	                            if (d.length > 0)
+    	                            	alert(d);
+                                    updateLogTables(srcBox.getValue);
                                 });
-
    return;
 };
 
+function add_dest_run_action (action) {
+	// prepare a partial command
+  partialCommand = 	{accessId: 'process-jsonMgt-command',
+          action: action,
+          source: srcBox.getValue(),
+          destinations: "",
+          msg: ""  };
+  // and popup the window to get a destination (ok-button will proceed, cancel will clear the partialCommand.
+  $('.destPopup').show();
+  return;
+}
 
 function helpFunc () 
 {
@@ -130,22 +222,6 @@ function createFileTreeRootContainer (initFileTreeUsers) {
 
 
 
-function updateTable(tblSel, srcSel, targetDiv) {
-  $.post('/cdm/showTable/'+tblSel, 
-	 { src: srcSel,
-		 dst: null}, 
-	 function(data) {
-	  $(targetDiv).html(data);
-	      });
-};
-
-function updateLogTables(srcSel) {
-  /*
-    update log-table and error-table
-   */
-  updateTable('actions', srcSel, '#actionDiv');
-  updateTable('errors', srcSel, '#errorDiv');
-};
 
 function createSelectBox(targetDiv) {
     return {
@@ -162,8 +238,8 @@ function createSelectBox(targetDiv) {
 
 
 function createFileViewer(targetDiv, selBox, updateFunc) {
-    var updateFunc1 = (typeof (updateFunc) == 'function')?
-	updateFunc : function(x) {return null;};
+ //   var updateFunc1 = (typeof (updateFunc) == 'function')?
+//	              updateFunc : function(x) {return null;};
     return {
 	selectBox: selBox,
 	update: (typeof (updateFunc) == 'function')?
@@ -191,7 +267,8 @@ function createFileViewer(targetDiv, selBox, updateFunc) {
 	},
 	accept: function() {
 	    delete this.oldSelect;
-	    this.hide(); 
+	    this.hide();
+	    //alert('CvK: update for: '+this.selectBox.txt)
 	    this.update(this.selectBox.txt);},
 	reject: function() {
 	    this.selectBox.setValue(this.oldSelect);
@@ -212,7 +289,6 @@ function initialize_step1()
 	return;	
 };
 
-var srcBox, srcFv, dstBox, dstFv;
 
 /*
  *   After pageload initialize_step1 is called to retrieve the document root (location of pentaho-solution in the file-system).
@@ -227,12 +303,12 @@ function initialize_step2(result, status) {
   /*
     prepare the file-selector for the source(s)
   */
-  srcBox = createSelectBox('#srcBox');
+  srcBox = createSelectBox('#srcBoxDiv');
   srcBox.setValue('*');
   srcFv = createFileViewer("#srcFileviewWindow", srcBox, updateLogTables);
   /*  initialization of buttons is performed in a call-back of the create-fileTreeRootContainer
       (see below) as the file-root first needs to be loaded. */
- // srcFv.hide();
+  srcFv.hide();
 //  $('#src-sel-button')[0].onclick = function(event) { srcFv.init() };
 //  $("#sfv-ok-button")[0].onclick = function(event) { srcFv.accept();};
 //  $("#sfv-cancel-button")[0].onclick = function(event) { srcFv.reject();};
@@ -240,8 +316,8 @@ function initialize_step2(result, status) {
   /*
     prepare the file-selector for the destination(s)
   */
-  dstBox = createSelectBox('#dstBox');
-  dstFv = createFileViewer("#dstFileviewerwindow", dstBox);
+  dstBox = createSelectBox('#dstBoxDiv');
+  dstFv = createFileViewer("#dstFileviewwindow", dstBox);
   /*  initialization of buttons is performed in a call-back of the create-fileTreeRootContainer
       (see below) as the file-root first needs to be loaded. */
   dstFv.hide();
@@ -266,67 +342,9 @@ function initialize_step2(result, status) {
   */
   var destPopup = $(".destPopup");
   destPopup.hide();
-  var partialCommand = null;  // used to store command that still 
-                              // needs a destination value.
-  var processCommand = function (dest, msg) {
-      if (partialCommand == null) {
-	  alert(" STRANGE!! no command available");
-	  return;
-      }
-      partialCommand.dst = dest;
-      partialCommand.msg = msg;
-
-      $.post('/cdm/jsonMgt', partialCommand, 
-	    function(response) {
-		alert(response);
-		//		ready = true;
-	     });
-      partialCommand = null;
-      return;
-  };
   
   
-  var getMessageProcessCommand = function (dest) {
-      processCommand(dest, "empty")
-  };
-  $("#dfv-ok-button")[0].onclick = function(event) { 
-      dstFv.accept();
-      processCommand(dstBox.getValue());
-      destPopup.hide();
-      return;};
-  $("#dfv-cancel-button")[0].onclick = function(event) { 
-      dstFv.reject();
-      partialCommand = null;  // operation cancelled
-      destPopup.hide();
-      return;
-  };
-  
 
-
-  /*
-    Connect the jsonMgt button and pass the current selections when the button is pressed.
-   */
-  $('.jsonMgt').each(function() {
-    var current = this;
-    var theId = $(this).attr('id');
-    this.onclick = function(event) {
-	//	var ready = false;
-	partialCommand = {action: theId,
-			  src: srcBox.getValue()};
-	if (   (theId == "apply") 
-	    || (theId == "clean-copy")) {
-	    destPopup.show();
-	    dstFv.init();
-	    // command will be processes as by the 
-	    // dfv-ok-button or the dfv-cancel-button
-	} else if (   (theId == "create")
-		   || (theId == "commit"))
-	    getMessageProcessCommand();
-	else processCommand("", null);  // no destination and message needed
-
-	return;
-      } // end onclick
-    }); // end .each
 
     /*
       update log-table and error-table

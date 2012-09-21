@@ -81,12 +81,11 @@
      description="generate data to show a table."
      >
 	<clojure>
-	(fn [params]
-	   (info "genFileView still needs to be implemented")
-	  "to be implemented"
-    )
+	(show-table params)
 	</clojure>
    <params>
+      <param id="source"  default=""/>
+     <param id="tblSel"   default="actions"/>
    </params>
  </action>
 
