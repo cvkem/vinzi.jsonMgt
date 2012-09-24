@@ -150,8 +150,7 @@ function helpFunc ()
                                             
     cdpExec(pars, function (d, s) {
                                     Dashboards.fireChange('refreshTables', refreshTables+1);
-                                    alert('Executed a help '+
-                                    ' received d='+strObj(d)+' and s='+strObj(s));
+                                    alert(d[0]);
                                 });
 
    return;
