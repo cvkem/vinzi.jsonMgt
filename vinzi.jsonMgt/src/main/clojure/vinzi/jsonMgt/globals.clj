@@ -26,6 +26,7 @@
 
 (def cdfdePostfix ".cdfde")
 (def cdaPostfix   ".cda")
+(def wcdfPostfix   ".wcdf")
 (def jsonPostfix ".json")
 
 (def defPostfix  jsonPostfix)

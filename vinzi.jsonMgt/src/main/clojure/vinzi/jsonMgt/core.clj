@@ -184,6 +184,12 @@
   [filename]
   (str (stripDefaultPostfix filename) cdaPostfix))
 
+
+(defn deriveWcdfFilename
+  "derive a cda-filename from the .cdfde filename."
+  [filename]
+  (str (stripDefaultPostfix filename) wcdfPostfix))
+
 (defn getFileName
   "Get the filename by stripping of the path-part and trimming redundant spaces."
   [filename]
@@ -192,6 +198,12 @@
       (str/split regExpSepator)
       (last)
       (str/trim)))
+
+(defn replace-filename [filename newName]
+  (let [fName (getFileName filename)
+        fBase (apply str (take (- (count filename) (count fName))))]
+    (str fBase newName)))
+        
 
 (defn getDirectory
   "Get the directory of a 'filePath' "
@@ -387,20 +399,39 @@
 ;; 	normJson  (json/json-str fileVersion)]
 ;;     normJson))
 
+(defn generate-wcdf [fileName]
+  (let [fName (getFileName fileName)
+        fName (apply str (take (- (count fName) (count cdfdePostfix)) fName)) 
+        contents (str "<cdf><title>" fName "</title>"
+                      "<author/>"
+                      "<description></description>"
+                      "<icon/>"
+                      "<style>Clean</style>"
+                      "</cdf>")]
+    contents))
 
 (defn- writeVersionFS
-  "Write a version of the cdfde-file and the cda file to the file-system. The cda-file is derived from the cdfde-file."
-  [trackInfo contents obj]
+  "Write a version of the cdfde-file, the wcdf-file and the cda-file to the file-system. The cda-file is derived from the cdfde-file."
+  ([trackInfo contents obj]
+    (writeVersionFS trackInfo contents obj nil))
+  ([trackInfo contents obj newName]
   {:pre [(map? trackInfo) (isJson? contents)]}
   (let [{filename :file_location} trackInfo
+        filename (if (string? newName)
+                   (replace-filename filename newName)
+                   filename)
         filename (extendFSPath filename)
         cda      (cda/generateCda (jsonZipper obj))
-        cdaFile  (deriveCdaFilename filename)]
+        cdaFile  (deriveCdaFilename filename)
+        wcdf      (deriveCdaFilename filename)
+        wcdfFile (deriveCdaFilename filename)]
+    
     ;	(str (apply str (take (- (count filename) 5) filename)) "cda")]
     (spit filename contents)
     (spit cdaFile  cda)
+    (spit wcdfFile wcdf)
     ;;    (println "TODO: Add exception handler to catch errors??")
-    true))
+    true)))
 
 
 (defn getPatchesFS
@@ -487,51 +518,73 @@
 
 
 (defn cleanCopyTracks
-  "Create a copy of the src-track at location 'dstPath'. This function create for the destination (a) a track-database containing the last commit of srcTrack (b) the .cdfde and .cda files at the given location (c) an empty patch-database."
+  "Create a copy of the src-track at location 'dstPath'. This function create for the destination: 
+       (a) a track in the database containing the last commit of srcTrack 
+       (b) the .cdfde, .wcdf and .cda files at the given location."
   [[srcTrack & dstPaths]]
   (let [srcInfo  (ps_getTrackInfo srcTrack)
-	srcTrack (:track_name srcInfo)]
+        srcTrack (:track_name srcInfo)]
     (if-let [srcFile (getTrackFilePath srcInfo)]
       (if (not (trackDirty? srcInfo))
-	(if-let [srcObj  (:obj (getCommit srcTrack))]
-	  ;; start inner loop (per dstPath)
-	  (doseq [dstTrack dstPaths]
-	    (let [filename (extendFSPath dstTrack)  ;; prepend document-root
-		  base  (stripDefaultPostfix filename)
-		  cdfdeName (str base cdfdePostfix)
-		  cdfde  (File. cdfdeName)
-		  cdaName (str base cdaPostfix)
-		  cda  (File. cdaName)]   ;; File. does not need to be closed!
-	      (if (directoryExists base)
-	      (if (or (not cdfde) (not (.exists cdfde)))
-		(if (or (not cda) (not (.exists cda)))
-		  (let [;; in cdfde-file paths start with a '/' (pentaho-solution-folder)
-			pentSolPath (if (= (first cdfdeName) \/) cdfdeName (str \/ cdfdeName)) 
-			patches [(Patch. ["/"] actChange :filename pentSolPath)] ]
-		    (if-let [{dstObj :obj}
-			     (applyPatchesCdfde srcObj patches srcTrack)]
-		      ;; create a tables for this track
-		      (let [trackInfo  (registerTrackInfo cdfde)
-			    trackId    (:track_id trackInfo)
-			    contents   (getJsonRepr dstObj)
-			    dt         (getCurrDateTime)
-			    newTrack (:track_name trackInfo)]
-			(when trackInfo
-;;			  (createTrackTables trackName)
-			  (ps_writeCommit trackId contents dt)
-			  (writeVersionFS trackInfo contents dstObj)
-			  (writeActionEntry newTrack dt
-			     (format (str "Derived clean copy of track '%s'"
-					  "with new name '%s' and path '%s'.")
-				  srcTrack newTrack cdfdeName))))
-		      (addMessage dstTrack "Changing filename to  '%s' in a copy of the current source commit failed."  cdfdeName)))
-		    (addMessage dstTrack "Destination-file '%s' exists already."  cdaName))
-		(addMessage dstTrack "Destination-file '%s' exists already."  cdfdeName))
-	    (addMessage dstTrack "Directory '%s' does not exist."  (getDirectory cdfdeName)))))
-	  ;; end inner loop
-	  (addMessage srcTrack "Failed to read last commit from the database."))
-	(addMessage srcTrack "Can not create copies with non-committed changes on source."))
+        (if-let [srcObj  (:obj (getCommit srcTrack))]
+          ;; start inner loop (per dstPath)
+          (doseq [dstTrack dstPaths]
+            (let [filename (extendFSPath dstTrack)  ;; prepend document-root
+                  base  (stripDefaultPostfix filename)
+                  cdfdeName (str base cdfdePostfix)
+                  cdfde  (File. cdfdeName)
+                  cdaName (str base cdaPostfix)
+                  cda  (File. cdaName)]   ;; File. does not need to be closed!
+              (if (directoryExists base)
+                (if (or (not cdfde) (not (.exists cdfde)))
+                  (if (or (not cda) (not (.exists cda)))
+                    (let [;; in cdfde-file paths start with a '/' (pentaho-solution-folder)
+                          pentSolPath (if (= (first cdfdeName) \/) cdfdeName (str \/ cdfdeName)) 
+                          patches [(Patch. ["/"] actChange :filename pentSolPath)] ]
+                      (if-let [{dstObj :obj}
+                               (applyPatchesCdfde srcObj patches srcTrack)]
+                        ;; create a tables for this track
+                        (let [trackInfo  (registerTrackInfo cdfde)
+                              trackId    (:track_id trackInfo)
+                              contents   (getJsonRepr dstObj)
+                              dt         (getCurrDateTime)
+                              newTrack (:track_name trackInfo)]
+                          (when trackInfo
+                            ;;			  (createTrackTables trackName)
+                            (ps_writeCommit trackId contents dt)
+                            (writeVersionFS trackInfo contents dstObj)
+                            (writeActionEntry newTrack dt
+                                              (format (str "Derived clean copy of track '%s'"
+                                                           "with new name '%s' and path '%s'.")
+                                                      srcTrack newTrack cdfdeName))))
+                        (addMessage dstTrack "Changing filename to  '%s' in a copy of the current source commit failed."  cdfdeName)))
+                    (addMessage dstTrack "Destination-file '%s' exists already."  cdaName))
+                  (addMessage dstTrack "Destination-file '%s' exists already."  cdfdeName))
+                (addMessage dstTrack "Directory '%s' does not exist."  (getDirectory cdfdeName)))))
+          ;; end inner loop
+          (addMessage srcTrack "Failed to read last commit from the database."))
+        (addMessage srcTrack "Can not create copies with non-committed changes on source."))
       (addMessage srcTrack "The file-path could not be found"))))
+
+
+
+(defn checkout-copy-last
+  "Checkout a copy of the dashboard with suffix _last. Does not create a new track. Use clean-copy if you want that."
+  [[srcTrack]]
+  (let [srcInfo  (ps_getTrackInfo srcTrack)
+        srcTrack (:track_name srcInfo)]
+    (if-let [srcFile (getTrackFilePath srcInfo)]
+        (if-let [srcObj  (:obj (getCommit srcTrack))]
+          (let [newName    (str srcTrack "_last" cdfdePostfix)  
+                contents   (getJsonRepr srcObj)
+                dt         (getCurrDateTime)]
+            (writeVersionFS srcInfo contents srcObj newName)
+            (writeActionEntry srcTrack dt
+                              (format (str "Checked out a copy of '%s'"
+                                           "to new name '%s'.")
+                                      srcTrack newName)))
+          (addMessage srcTrack "Failed to read last commit from the database."))
+        (addMessage srcTrack "The file-path could not be found"))))
 
 
 (defn- commitPatchSet
@@ -647,44 +700,31 @@
   "Apply the patches from 'depth' commits back in time until current commit of 'srcTrack' to 'dstTrack'." 
   [srcTrack dstTrack depth]
   (let [srcTrack (getTrackName srcTrack)
-	dstTrack (getTrackName dstTrack)
-	srcInfo  (ps_getTrackInfo srcTrack)
-	dstInfo  (ps_getTrackInfo dstTrack)
-	srcId    (:track_id srcInfo)
-	dstId    (:track_id dstInfo)]
+        dstTrack (getTrackName dstTrack)
+        srcInfo  (ps_getTrackInfo srcTrack)
+        dstInfo  (ps_getTrackInfo dstTrack)
+        srcId    (:track_id srcInfo)
+        dstId    (:track_id dstInfo)]
     (if (not (trackDirty? srcInfo))
       (if-let [dstFile (extendFSPath (:file_location dstInfo))]
-	(if (not (trackDirty? dstInfo))
-	  (if-let [dt (:datetime (getCommit srcInfo depth))]
-	    (if-let [patches (ps_getPatches srcId dt)]
-	      (if-let [dst (:obj (getCommit dstInfo))]
-		(if-let [{modDst :obj} (applyPatchesCdfde dst patches dstTrack)]
-		  (let [
-			;; _ (let [dzip (jsonZipper dst)
-			;; 	mzip (jsonZipper modDst)]
-			;;     (println "the original")
-			;;     (pprintJsonZipper dzip)
-			;;     (println "the modified")
-			;;     (pprintJsonZipper mzip)
-			;;     (showJsonStructure (zipTop mzip))
-			;;     (println "Patches are: ")
-			;;     (doall (map println patches))
-			;;     )
-			jsonDst  (getJsonRepr modDst)
-;			_ (println jsonDst)
-			]
-		    (if (writeVersionFS dstInfo jsonDst modDst)
-		      (if-let [dt (commitTrackPatches dstInfo)]
-			(writeActionEntry dstTrack dt
-			 (format "Committed updated version of '%s'." dstTrack))
-			(addMessage  dstTrack "Commit of updated version failed"))
-		      (addMessage dstTrack "Failed to check-out the new version to the file-system")))
-		  (addMessage dstTrack "Failed to apply the patches to last commit."))
-		(addMessage dstTrack"Failed to read last commit from database."))
-	      (addMessage srcTrack "Failed to read the patches from database."))
-	    (addMessage srcTrack (str "date-time for the commit at depth " depth " not found.")))
-	  (addMessage dstTrack "The destination has non-committed changes"))
-	(addMessage dstTrack "The file-path for destination track could not be found"))
+        (if (not (trackDirty? dstInfo))
+          (if-let [dt (:datetime (getCommit srcInfo depth))]
+            (if-let [patches (ps_getPatches srcId dt)]
+              (if-let [dst (:obj (getCommit dstInfo))]
+                (if-let [{modDst :obj} (applyPatchesCdfde dst patches dstTrack)]
+                  (let [jsonDst  (getJsonRepr modDst)]
+                    (if (writeVersionFS dstInfo jsonDst modDst)
+                      (if-let [dt (commitTrackPatches dstInfo)]
+                        (writeActionEntry dstTrack dt
+                                          (format "Committed updated version of '%s'." dstTrack))
+                        (addMessage  dstTrack "Commit of updated version failed"))
+                      (addMessage dstTrack "Failed to check-out the new version to the file-system")))
+                  (addMessage dstTrack "Failed to apply the patches to last commit."))
+                (addMessage dstTrack"Failed to read last commit from database."))
+              (addMessage srcTrack "Failed to read the patches from database."))
+            (addMessage srcTrack (str "date-time for the commit at depth " depth " not found.")))
+          (addMessage dstTrack "The destination has non-committed changes"))
+        (addMessage dstTrack "The file-path for destination track could not be found"))
       (addMessage srcTrack "The source has uncommited changes"))))
 
 (defn revertToCommit
@@ -692,25 +732,25 @@
   [args]
   (doseq [trackName args]
     (let [track (getTrackName trackName)
-	  dt (getCurrDateTime)]
+          dt (getCurrDateTime)]
       (if (confirmReader (format "Overwite the files in the filesystem for track '%s'?" track))
-	(if-let [{:keys [json obj]} (getCommit track)]
-	  (if (writeVersionFS track json obj)
-	    (writeActionEntry track dt
-	      (format "Checked-out version of '%s' to file-system" track))
-	    (addMessage track "Failed to check-out the new version to the file-system"))
-	  (addMessage track "Failed to read last commit from database."))
-	(addMessage track "Drop last commit aborted by user.")))))
+        (if-let [{:keys [json obj]} (getCommit track)]
+          (if (writeVersionFS track json obj)
+            (writeActionEntry track dt
+                              (format "Checked-out version of '%s' to file-system" track))
+            (addMessage track "Failed to check-out the new version to the file-system"))
+          (addMessage track "Failed to read last commit from database."))
+        (addMessage track "Drop last commit aborted by user.")))))
       
 
 (defn dropTrackInfo
   "Complete remove a track from the system. Only log-entries will be remaining."
   [trackInfo]
   (let [{:keys [track_id track_name]} trackInfo
-	cdt  (getCurrDateTime)]
+        cdt  (getCurrDateTime)]
     (ps_dropTrackInfo track_id)
     (writeActionEntry track_name cdt
-	(format "The track '%s' has been fully removed." track_name))))
+                      (format "The track '%s' has been fully removed." track_name))))
 
 
 (defn dropLastCommit
@@ -718,18 +758,18 @@
   [args]
   (doseq [trackName args]
     (let [track (getTrackName trackName)
-	  cdt (getCurrDateTime)]
+          cdt (getCurrDateTime)]
       (if (confirmReader (format "Drop last commit of '%s'?" track))
-	(if-let [trackInfo (ps_getTrackInfo track)]
-	  (let [{:keys [track_id dt]} trackInfo
-		droppedPatches (ps_dropLastCommit track_id dt)]
-	    (writeActionEntry track cdt
-	      (format "Dropped commit of date '%s' from  '%s' from the database (consisting of %s patches)"  dt track droppedPatches))
-	    ;; if all commits are removed then the track will also be removed
+        (if-let [trackInfo (ps_getTrackInfo track)]
+          (let [{:keys [track_id dt]} trackInfo
+                droppedPatches (ps_dropLastCommit track_id dt)]
+            (writeActionEntry track cdt
+                              (format "Dropped commit of date '%s' from  '%s' from the database (consisting of %s patches)"  dt track droppedPatches))
+            ;; if all commits are removed then the track will also be removed
 	    (when (nil? (getCommit trackInfo))
 	      (dropTrackInfo trackInfo)))
-	  (addMessage track "Failed to read last commit of track from database."))
-	(addMessage track "Drop last commit aborted by user.")))))
+          (addMessage track "Failed to read last commit of track from database."))
+        (addMessage track "Drop last commit aborted by user.")))))
 
 
 (defn select-log-lines 
@@ -777,6 +817,7 @@
       "create" "Usage: create <file-name>\nThe 'file-name' should be a path relative to the current location in the file-system or a full path. This command creates a track-table (full version of the fill) and a patch-table (incremental changes) for the track. The full path-name is stored. Such that you can refer to the track using the base of the file-name during subsequent operations. The current version of .cdfde file is used to make the initial commit to the track-table."
       "commit" "Usage: commit <track> ....\nThe full file-path of 'track' is looked up and the file is committed to the database. A full copy of the file is stored in the 'track-table'. The patches required to synchronize the last commit version with the new version are computed. These patches are stored in the 'patch-table' of this track."
       "clean-copy"  "Usage: copy-track <source_track> <destination file>\nCreate a copy of the src-track at location 'dstPath'. This function create for the destination (a) a track-table containing the last commit of srcTrack (b) the .cdfde and .cda files at the given location (c) an empty patch-table for this track."
+      "checkout-copy-last"  "Usage: checkout-copy-last <source_track>\nCreate a copy of the src-track in the same folder, but having name  'trackName_last'. (Does not create a new track in the CDM for the checked-out copy.)"
       "diff" "Usage: diff <track> ....\nThis will show the series of patches that is needed to synchronize the last committed version (database) with the version in the file-system."
       "diffviewer" "Usage diffviewer <track>\nOpens a graphical viewer that shows the differences between the last committed version (database) and the version in de file-system. The differences are color-code (inserts, changes)."
       "dirty" "Usage: dirty [track] ....\nFor each of the tracks it is determined flags  whether the last committed version (database) corresponds to the version in de file-system (match) or that it is dirty (changed). If no arguments are passed a listing of the dirty-status of all tracks is shown."
@@ -787,16 +828,17 @@
 
 (def generalHelp
      ["The valid commands are:"
-      "  create: create a track for the dashboard (cdfde-file)"
-      "  commit: commits a new version to a track"
-      "  clean-copy: create a clean copy of the track with a new track-name"
-      "  diff: show the differences for a track between the last committed version and the current file"
-      "  diffviewer: show the differences in the (graphical) viewer"
-      "  dirty: shows all tracks where changed since the last commit"
-      "  apply: applies all modifications from the last commit of track A to track B"
-      "  revert-to-commit:  revert the files on disk to the last committed version (overwrites file-system)"
-      "  drop-last-commit: delete the last committed version (leaves file-system unchanged)"
-      "  exit: exit cdfdeMgt"
+      " 1. create: create a track for the dashboard (cdfde-file)"
+      " 2. commit: commits the current file-system version to a cdm-track"
+      " 3. clean-copy: create a clean copy of the track with a new track-name (and stores it in the cdm-system)"
+      " 4. diff: show the differences for a track between the last committed version and the current file"
+      " 5. diffviewer: show the differences in the (graphical) viewer"
+      " 6. dirty: shows all tracks that have been changed since the last commit"
+      " 7. apply: applies all modifications from the last commit of track A to track B"
+      " 8. revert-to-commit:  revert the files on disk to the last committed version (overwrites file-system)"
+      " 9. drop-last-commit: delete the last committed version (leaves file-system unchanged)"
+      " 10. checkout-copy-last: Checkout a copy of a track under name 'trackName_last.cdfde' (does not create new track)"
+      " 11. exit: exit cdfdeMgt"
       "Type help <command> to get more information about a command"
       ])
 
@@ -842,6 +884,7 @@
       "revert-to-commit"  revertToCommit
       "drop-last-commit"  dropLastCommit
       "clean-copy"   cleanCopyTracks
+      "checkout-copy-last" checkout-copy-last
       "list-actions"  listActions
       "list-errors"  listErrors
       })
@@ -852,9 +895,10 @@
       "help"   1
       "apply"  1
       "clean-copy"   1
+      "checkout-copy-last" 1
       })
 
-(def dontExpandComm #{ "create"  "clean-copy" "help" "list-errors" "list-actions"})
+(def dontExpandComm #{ "create"  "clean-copy" "checkout-copy-last" "help" "list-errors" "list-actions"})
 
 
 
