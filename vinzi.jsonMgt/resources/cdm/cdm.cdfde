@@ -2769,6 +2769,150 @@
       "type": "TextAlign"
      }
     ]
+   },
+   {
+    "id": "1555af5f-d597-a41f-1963-a0fb37253d68",
+    "type": "LayoutRow",
+    "typeDesc": "Row",
+    "parent": "UnIqEiD",
+    "properties": [
+     {
+      "name": "name",
+      "value": "dialogs",
+      "type": "Id"
+     },
+     {
+      "name": "height",
+      "value": "",
+      "type": "Integer"
+     },
+     {
+      "name": "backgroundColor",
+      "value": "",
+      "type": "Color"
+     },
+     {
+      "name": "roundCorners",
+      "value": "",
+      "type": "RoundCorners"
+     },
+     {
+      "name": "cssClass",
+      "value": "",
+      "type": "String"
+     },
+     {
+      "name": "textAlign",
+      "value": "",
+      "type": "TextAlign"
+     }
+    ]
+   },
+   {
+    "id": "0888f75e-2d5f-e905-b321-a38a764d34fe",
+    "type": "LayoutColumn",
+    "typeDesc": "Column",
+    "parent": "1555af5f-d597-a41f-1963-a0fb37253d68",
+    "properties": [
+     {
+      "name": "name",
+      "value": "",
+      "type": "Id"
+     },
+     {
+      "name": "columnSpan",
+      "value": "20",
+      "type": "Integer"
+     },
+     {
+      "name": "columnPrepend",
+      "value": "",
+      "type": "Integer"
+     },
+     {
+      "name": "columnAppend",
+      "value": "",
+      "type": "Integer"
+     },
+     {
+      "name": "columnPrependTop",
+      "value": "false",
+      "type": "Boolean"
+     },
+     {
+      "name": "columnAppendBottom",
+      "value": "false",
+      "type": "Boolean"
+     },
+     {
+      "name": "columnBorder",
+      "value": "false",
+      "type": "Boolean"
+     },
+     {
+      "name": "columnBigBorder",
+      "value": "false",
+      "type": "Boolean"
+     },
+     {
+      "name": "backgroundColor",
+      "value": "",
+      "type": "Color"
+     },
+     {
+      "name": "roundCorners",
+      "value": "",
+      "type": "RoundCorners"
+     },
+     {
+      "name": "height",
+      "value": "",
+      "type": "Integer"
+     },
+     {
+      "name": "cssClass",
+      "value": "",
+      "type": "String"
+     },
+     {
+      "name": "textAlign",
+      "value": "",
+      "type": "TextAlign"
+     }
+    ]
+   },
+   {
+    "id": "8ca91add-1534-cac6-43dc-f82de7605859",
+    "type": "LayoutHtml",
+    "typeDesc": "Html",
+    "parent": "0888f75e-2d5f-e905-b321-a38a764d34fe",
+    "properties": [
+     {
+      "name": "name",
+      "value": "commitDialogContainer",
+      "type": "Id"
+     },
+     {
+      "name": "html",
+      "value": "<div id=\"commitDialog\" title=\"Commit-message\">\n    <p>About to commite file:</p>\n    <p id=\"fileMask\"></p>\n    <form>\n\t<fieldset>\n\t\t<label for=\"msg\">Commit-message</label><br/>\n\t\t<input type=\"text\" name=\"msg\" id=\"msg\" class=\"text ui-widget-content ui-corner-all\" />\n        <br/>\n\t</fieldset>\n\t</form>\n</div> ",
+      "type": "Html"
+     },
+     {
+      "name": "color",
+      "value": "",
+      "type": "Color"
+     },
+     {
+      "name": "fontSize",
+      "value": "",
+      "type": "Integer"
+     },
+     {
+      "name": "cssClass",
+      "value": "",
+      "type": "String"
+     }
+    ]
    }
   ]
  },
@@ -3073,7 +3217,7 @@
      },
      {
       "name": "expression",
-      "value": "function()\n{ run_action_src('commit');\n  return;\n}",
+      "value": "function()\n{ \n    $(\"#commitDialog\").dialog('open');\n  return;\n}",
       "type": "JavaScript"
      },
      {
@@ -3292,7 +3436,7 @@
      },
      {
       "name": "expression",
-      "value": "function()\n{   alert('Checkout should checkout a copy onder the name src_bpy.cdfde.\\n'+\n        'to be implemented')\n    ;;run_action_src('checkout');\n  return;\n}",
+      "value": "function()\n{   \n    run_action_src('checkout-copy-last');\n  return;\n}",
       "type": "JavaScript"
      },
      {
