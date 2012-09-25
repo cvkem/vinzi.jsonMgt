@@ -63,19 +63,18 @@ font-size: 80%;
 	     width:250px;}
 
 /* extensions of the jqueryFileTree */
-.jqueryFileTree LI {padding-left: 20px;}
-.jqueryFileTree LI.ext_sh { background: url(../../cdm/style/images/application.png) left top no-repeat; }
-.jqueryFileTree LI.ext_cdfde { background: url(../../cdm/style/images/cde.png) left top no-repeat; }
-.jqueryFileTree LI.ext_cda { background: url(../../cdm/style/images/cda.png) left top no-repeat; }
-.jqueryFileTree LI.ext_cdf { background: url(../../cdm/style/images/cdf.png) left top no-repeat; }
+.jqueryFileTree LI.ext_sh { background: url(../../system/pentaho-cdf-dd/images/filetree/application.png) left top no-repeat; }
+.jqueryFileTree LI.ext_cdfde { background: url(../../system/pentaho-cdf-dd/images/filetree/cde.png) left top no-repeat; }
+.jqueryFileTree LI.ext_cda { background: url(../../system/pentaho-cdf-dd/images/filetree/cda.png) left top no-repeat; }
+.jqueryFileTree LI.ext_cdf { background: url(../../system/pentaho-cdf-dd/images/filetree/cdf.png) left top no-repeat; }
 
 
 
 #disclaimerCDM {
     background: #FC0;
     padding:7px;
-border-top: solid 1px #BBB;
-border-left: solid 1px #BBB;
-border-bottom: solid 1px #FFF;
-border-right: solid 1px #FFF;}
+    border-top: solid 1px #BBB;
+    border-left: solid 1px #BBB;
+    border-bottom: solid 1px #FFF;
+    border-right: solid 1px #FFF;}
 
