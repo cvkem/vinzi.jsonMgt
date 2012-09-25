@@ -21,7 +21,20 @@ function strObj(obj) {
   return s;
 };
 
-var namesPrefixed = False;
+function showError(prefix, err) {
+	  var msg = prefix + '\n\n';
+	  if (typeof err.message != 'undefined')
+	     msg += err.message + '\n\n';
+	  msg += strObj(err);
+
+	  alert(msg);
+	  return;
+	}
+
+
+
+
+var namesPrefixed = false;
 
 function getCurrentUser() {
     var user = arguments[0];
@@ -83,7 +96,7 @@ function updateTable(tblSel, srcSel, targetDiv) {
 	    cdpExec(partialCommand, function (d, s) {
             if (d.length > 0)
             	alert(d);
-            updateLogTables(srcBox.getValue);
+            updateLogTables(srcBox.getValue());   //() added
         });
 		partialCommand = null;
 		return;
@@ -122,7 +135,7 @@ function run_action (action) {
 	    cdpExec(pars, function (d, s) {
 	    	                            if (d.length > 0)
 	    	                            	alert(d);
-//	                                    updateLogTables(srcBox.getValue);
+//	                                    updateLogTables(srcBox.getValue());  //() added
 	                                });
 	   return;
 	};
@@ -139,7 +152,7 @@ function run_action_src (action) {
     cdpExec(pars, function (d, s) {
     	                            if (d.length > 0)
     	                            	alert(d);
-                                    updateLogTables(srcBox.getValue);
+                                    updateLogTables(srcBox.getValue());  //() added
                                 });
    return;
 };
@@ -173,8 +186,46 @@ function helpFunc ()
    return;
 }
 
+$(function () {
+	// Add a new exclusion (or update an existing exclusion)
+	$("#commitDialog").dialog({autoOpen: false,
+                    width: 450,
+                    modal: true,
+                    closeText: 'Annuleer',
+                    open: function() {
+                      try {
+                    	  var dialogPrefix = '#commitDialog ';
+                         // set information items at top of box.
+                         $(dialogPrefix+'#filemask').html('<strong>files</strong>: '+srcBox.getValue());
+                         
+                         // set the dialog-defaults
+                         $(dialogPrefix+'#msg').val('');
 
+                         return;
+                       } catch (err) {
+                               showError('Error during "Open commit-dialog":', err);
+                       }
 
+                     },
+                     buttons: {
+                         "Commit": function() {
+                           try {
+                               var dialogPrefix = '#commitDialog ';
+ 
+                               var msg = $(dialogPrefix+'#msg').val();
+
+                               run_action_src('commit', msg);
+                             
+                               $(this).dialog('close');
+                             return;
+                           } catch (err) {
+                               showError('Error during "Commit":', err);
+                           }
+                         }
+                     }
+ 		});  // END of commitDialog
+                        	
+});  // END of dialog handlers
 /*
  end interface functions  (implementations of the different buttons.)
 */

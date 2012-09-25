@@ -202,7 +202,7 @@
 
 (defn replace-filename [filename newName]
   (let [fName (getFileName filename)
-        fBase (apply str (take (- (count filename) (count fName))))]
+        fBase (apply str (take (- (count filename) (count fName)) filename))]
     (str fBase newName)))
         
 
@@ -302,7 +302,7 @@
   " Get the path in the file-system that corresponds to trackName (should be only one track)"
   [trackNI]
   (let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))
-	{filePath :file_location} trackInfo]
+        {filePath :file_location} trackInfo]
     (extendFSPath filePath)))
 
 
@@ -336,18 +336,20 @@
 
 
 (defn getCommit
-  "Get the committed full-version of 'trackName' as object and as jsonStr and the commit-specs. TrackName should be a string OR a map representing a trackInfo record with the commit-information included (datetime, json and obj)."
+  "Get the committed full-version of 'trackName' as object and as jsonStr and the commit-specs. 
+   TrackName should be a string OR a map representing a trackInfo record with the commit-information 
+   included (datetime, json and obj)."
   ([trackNI] (getCommit trackNI 0))   ;; default is to get last commit
   ([trackNI depth]
      {:pre [trackNI (or (= (type trackNI) java.lang.String) (map? trackNI))]}
      ;; look up the id of the latest version
      (if-let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
        (let [trackName (:track_name trackInfo)]
-	 (if-let [res (ps_getCommit (:track_id trackInfo) depth)]
-	   (let [json  (:contents res)
-		 obj   (json/read-json json)]
-	     (assoc trackInfo :obj obj  :json json  :datetime (:datetime res)))
-	   (addMessage trackName "ERROR: Could not retrieve track at depth %s." depth)))
+         (if-let [res (ps_getCommit (:track_id trackInfo) depth)]
+           (let [json  (:contents res)
+                 obj   (json/read-json json)]
+             (assoc trackInfo :obj obj  :json json  :datetime (:datetime res)))
+           (addMessage trackName "ERROR: Could not retrieve track at depth %s." depth)))
        (addMessage (str trackNI) "ERROR: could not retrieve track-info."))))
 
 
@@ -523,14 +525,17 @@
        (a) a track in the database containing the last commit of srcTrack 
        (b) the .cdfde, .wcdf and .cda files at the given location."
   [[srcTrack & dstPaths]]
-  (let [srcInfo  (ps_getTrackInfo srcTrack)
-        srcTrack (:track_name srcInfo)]
+  (let [srcTrack (getTrackName srcTrack)
+        srcInfo  (ps_getTrackInfo srcTrack)
+        ;;srcTrack (:track_name srcInfo)
+        ]
     (if-let [srcFile (getTrackFilePath srcInfo)]
       (if (not (trackDirty? srcInfo))
         (if-let [srcObj  (:obj (getCommit srcTrack))]
           ;; start inner loop (per dstPath)
           (doseq [dstTrack dstPaths]
-            (let [filename (extendFSPath dstTrack)  ;; prepend document-root
+            (let [ ;;  added getTrackName on enxt line (sept 2012)
+                  filename (extendFSPath (getTrackName dstTrack))  ;; prepend document-root
                   base  (stripDefaultPostfix filename)
                   cdfdeName (str base cdfdePostfix)
                   cdfde  (File. cdfdeName)
@@ -571,10 +576,13 @@
 
 (defn checkout-copy-last
   "Checkout a copy of the dashboard with suffix _last. Does not create a new track. Use clean-copy if you want that."
-  [[srcTrack]]
-  (let [srcInfo  (ps_getTrackInfo srcTrack)
-        srcTrack (:track_name srcInfo)]
-    (if-let [srcFile (getTrackFilePath srcInfo)]
+  [srcTracks]
+  (if (= (count srcTracks) 1)
+    (let [srcTrack (getTrackName (first srcTracks))
+          srcInfo  (ps_getTrackInfo srcTrack)
+          ;;srcTrack (:track_name srcInfo)
+          ]
+      (if-let [srcFile (getTrackFilePath srcInfo)]
         (if-let [srcObj  (:obj (getCommit srcTrack))]
           (let [newName    (str srcTrack "_last" cdfdePostfix)  
                 contents   (getJsonRepr srcObj)
@@ -585,7 +593,9 @@
                                            "to new name '%s'.")
                                       srcTrack newName)))
           (addMessage srcTrack "Failed to read last commit from the database."))
-        (addMessage srcTrack "The file-path could not be found"))))
+        (addMessage srcTrack "The file-path could not be found")))
+    (addMessage (first srcTracks) (str "In (checkout-copy-last) Expected exactly one srcTrack, "
+                                       "received " (count srcTracks) " tracks"))))
 
 
 (defn- commitPatchSet
@@ -599,23 +609,24 @@
       (debug lpf  "obtained patches " patches)
       (ps_writeCommit trackId jsonStr dt)
       (ps_writePatches trackId patches dt)
-      (debug lpf  "Added a new version for " trackName)
+      (debug lpf  "Added a new version for " trackName " at date-time: " dt)
       dt)))
 
 
 
- (defn- commitTrackPatches
-   "Commit a single track by detecting the patches in the file-system version and storing the full version and the patches."
-   [trackInfo]
-   (let [lpf "(commitTrackPatches): "
-         {:keys   [patches fsJson]} (getPatchesFS trackInfo)
-         trackId  (:track_id trackInfo)]
-     (debug lpf  "commitVersionTrack: patches are:")
-     (let [patchStr (with-out-str (doall (map println patches)))]
-       (if (enabled? :info)
-                     (info lpf patchStr)
-                     (println patchStr)))
-     (commitPatchSet (:track_name trackInfo) trackId fsJson patches)))
+(defn- commitTrackPatches
+  "Commit a single track by detecting the patches in the file-system version and storing the full version and the patches."
+  [trackInfo]
+  (let [lpf "(commitTrackPatches): "
+        {:keys   [patches fsJson]} (getPatchesFS trackInfo)
+        trackId  (:track_id trackInfo)]
+    ;; for debugging
+    (let [patchStr (str "commitVersionTrack: patches are: " 
+                        (with-out-str (doall (map println patches))))]
+      (if (enabled? :debug)
+        (debug lpf patchStr)
+        (println  patchStr)))
+    (commitPatchSet (:track_name trackInfo) trackId fsJson patches)))
 
 
 (defn commitVersion
@@ -623,10 +634,10 @@
   [args]
   (doseq [trackName args]
     (let [trackInfo (ps_getTrackInfo (getTrackName trackName))
-	  nme (:track_ame trackInfo)]
-	  (if-let [dt (commitTrackPatches trackInfo)]
-	    (writeActionEntry nme dt
-			      (format "Committed new version for %s" nme))
+          nme (:track_name trackInfo)]
+      (if-let [dt (commitTrackPatches trackInfo)]
+        (writeActionEntry nme dt
+                          (format "Committed new version for %s" nme))
    	    (addMessage trackName "Commit failed")))))
 
  (defn- diffViewer
