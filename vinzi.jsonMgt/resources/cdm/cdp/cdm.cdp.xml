@@ -67,6 +67,7 @@
 	</clojure>
    <params>
       <param id="action"/>
+      <param id="user"/>
       <param id="source"  default=""/>
       <param id="destinations" default=""/>
       <param id="msg" default=""/>

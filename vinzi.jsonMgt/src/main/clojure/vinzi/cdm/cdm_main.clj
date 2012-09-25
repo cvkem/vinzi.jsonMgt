@@ -66,9 +66,10 @@
         				  par (if (and (= (count par) 1) (= (first par) "")) '() par)]
     					par))
   		action (str/lower-case (str/trim (:action params)))
-        src    (get-param :source)
-        dst    (get-param :destinations)
-        msg    (get-param :msg)]
+;;      user   (str/trim (:user params))
+      src    (get-param :source)
+      dst    (get-param :destinations)
+      msg    (get-param :msg)]
     {:command action
      :src  src
      :dst  dst
@@ -123,6 +124,9 @@
     ))
 
 
+;; TODO: Add a locking mechanisme to prevent two users from simultaneously modifying the same dashboard/track
+;; (should this locking be in jsonMgt.core or here?)
+
 (defn process-jsonMgt-command
   "Collect the relavant data and call the jsonMgt."
   [params]
@@ -148,13 +152,15 @@
                                              response)]
                             (doall response))))
               (procHelp []
-                        (swap! helpModus (fn [_] false))
+                        (swap! helpModus (fn [_] false))  ;; turn it off again
                         (with-out-str (jmgt/processCommand {:command "help"
                                                             :src  (list command)
                                                             :dst  '()})))]
+           (glb/set-override-username (:user params))
            (let [response (if @helpModus 
                                (procHelp) 
                                (ps/ps_callWithConnection procComm))]
+           (glb/set-override-username (:user params))
              (info "Received result: " response)
              response))))
   

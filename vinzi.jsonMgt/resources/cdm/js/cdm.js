@@ -21,6 +21,20 @@ function strObj(obj) {
   return s;
 };
 
+var namesPrefixed = False;
+
+function getCurrentUser() {
+    var user = arguments[0];
+    user = (user) ? user : Dashboards.context.user;
+
+    if (namesPrefixed) {
+        var prefix = user.slice(0,4);
+        if ((prefix == prefix.toUpperCase()) && (prefix[3] == '-'))
+            user = user.slice(4);
+    }
+    return user;
+}
+
 
 function cdpExec(pars, updateFunc) {
     if ((typeof theCdpFile !== 'string') || (theCdpFile.length == 0))
@@ -100,9 +114,10 @@ function updateTable(tblSel, srcSel, targetDiv) {
 function run_action (action) {
 	    var pars = {accessId: 'process-jsonMgt-command',
 	                  action: action,
+	                  user: getCurrentUser(),
 	                  source: "",
 	                  destinations: "",
-	                  msg: ""  };
+	                  msg: ( arguments[1] ) ? arguments[1] : ""  };
 	                                            
 	    cdpExec(pars, function (d, s) {
 	    	                            if (d.length > 0)
@@ -116,9 +131,10 @@ function run_action (action) {
 function run_action_src (action) {
     var pars = {accessId: 'process-jsonMgt-command',
                   action: action,
+                  user: getCurrentUser(),
                   source: srcBox.getValue(),
                   destinations: "",
-                  msg: ""  };
+                  msg: ( arguments[1] ) ? arguments[1] : ""   };
                                             
     cdpExec(pars, function (d, s) {
     	                            if (d.length > 0)
@@ -134,7 +150,7 @@ function add_dest_run_action (action) {
           action: action,
           source: srcBox.getValue(),
           destinations: "",
-          msg: ""  };
+          msg: ( arguments[1] ) ? arguments[1] : ""   };
   // and popup the window to get a destination (ok-button will proceed, cancel will clear the partialCommand.
   $('.destPopup').show();
   return;
@@ -144,6 +160,7 @@ function helpFunc ()
 {
     var pars = {accessId: 'process-jsonMgt-command',
                   action: "help",
+                  user: getCurrentUser(),
                   source: "",
                   destinations: "",
                   msg: ""  };

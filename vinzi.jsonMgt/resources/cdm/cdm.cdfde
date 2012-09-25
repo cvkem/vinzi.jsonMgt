@@ -3,6 +3,29 @@
   "title": "CDF - Sample structure",
   "rows": [
    {
+    "id": "79bdc757-ffd2-6236-64d7-dcf19e0fec7f",
+    "type": "LayoutResourceFile",
+    "typeDesc": "Resource",
+    "parent": "UnIqEiD",
+    "properties": [
+     {
+      "name": "name",
+      "value": "jqueryFiletreeStyle",
+      "type": "Id"
+     },
+     {
+      "name": "resourceType",
+      "value": "Css",
+      "type": "Label"
+     },
+     {
+      "name": "resourceFile",
+      "value": "${res:style/jqueryFileTree.css}",
+      "type": "ResourceFile"
+     }
+    ]
+   },
+   {
     "id": "73193d6f-8ae3-2a73-265e-5c0a53fff1e1",
     "type": "LayoutResourceFile",
     "typeDesc": "Resource",
@@ -33,7 +56,7 @@
     "properties": [
      {
       "name": "name",
-      "value": "vinziStyle",
+      "value": "cdmStyle",
       "type": "Id"
      },
      {
@@ -43,7 +66,7 @@
      },
      {
       "name": "resourceFile",
-      "value": "${res:../cdm/style/cdm.css}",
+      "value": "${res:style/cdm.css}",
       "type": "ResourceFile"
      }
     ]
@@ -896,6 +919,29 @@
       "name": "textAlign",
       "value": "",
       "type": "TextAlign"
+     }
+    ]
+   },
+   {
+    "id": "05d4bcde-8ff9-adba-d2cc-377bdef0935b",
+    "type": "LayoutSpace",
+    "typeDesc": "Space",
+    "parent": "UnIqEiD",
+    "properties": [
+     {
+      "name": "height",
+      "value": "0",
+      "type": "Integer"
+     },
+     {
+      "name": "backgroundColor",
+      "value": "",
+      "type": "Color"
+     },
+     {
+      "name": "cssClass",
+      "value": "",
+      "type": "String"
      }
     ]
    },
@@ -3100,7 +3146,7 @@
      },
      {
       "name": "expression",
-      "value": "function()\n{ run_action_src('revert');\n  return;\n}",
+      "value": "function()\n{ run_action_src('revert-to-commit');\n  return;\n}",
       "type": "JavaScript"
      },
      {
@@ -3173,7 +3219,7 @@
      },
      {
       "name": "expression",
-      "value": "function()\n{ run_action_src('drop');\n  return;\n}",
+      "value": "function()\n{ run_action_src('drop-last-commit');\n  return;\n}",
       "type": "JavaScript"
      },
      {
@@ -3226,7 +3272,7 @@
      },
      {
       "name": "label",
-      "value": "Checkout copy",
+      "value": "Checkout last",
       "type": "String"
      },
      {

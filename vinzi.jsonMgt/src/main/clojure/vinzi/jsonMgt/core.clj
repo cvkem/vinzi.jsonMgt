@@ -45,6 +45,7 @@
 
 ;;; NOTE:  the configuration stuff below is not used anymore.
 ;;;   configurations runs via .cdp.xml
+;;; However, this code is required by the standalone versions mainClHib and mainClDb
 ;;;   TODO: clean up code
 
 ;;(comment ;; unused code for web-interface, but used by mainHibCl  

@@ -74,12 +74,19 @@
 ;; initialize for debugging purposes
 (resetNrErrors)
 
+(def overrideUserName (atom nil))
+;; OverrideUserName is used in the web-interface as the executing user (tomcat or pentaho)
+;; usually does not correspond to the dashboard-user.
 
-
+(defn set-override-username [userName]
+  (swap! overrideUserName (fn [_] userName)))
 
 (defn getUserName
+  ""
   []
-  (.. System (getProperties) (get "user.name")))
+  (if @overrideUserName
+    @overrideUserName
+    (.. System (getProperties) (get "user.name"))))
 
 (defn getUserHome
   []
