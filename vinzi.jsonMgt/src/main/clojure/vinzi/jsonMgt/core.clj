@@ -47,7 +47,7 @@
 ;;;   configurations runs via .cdp.xml
 ;;;   TODO: clean up code
 
-(comment ;; unused code  
+;;(comment ;; unused code for web-interface, but used by mainHibCl  
 
 
 ;;
@@ -137,7 +137,7 @@
           (ps_initDatabase nil)
           (configure-doc-root nil)))))
 
-) ;; unused code
+;;) ;; unused code
 
 
 ;;;;;;;;;;;;;;;;;;;
