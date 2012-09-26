@@ -1,5 +1,6 @@
 (ns vinzi.cdm.cdm-main
-  (:use clojure.tools.logging)
+  (:use clojure.tools.logging
+        clojure.pprint)
   (:require [clojure.string :as str]
             [clojure.java.jdbc :as sql]
             [vinzi.pentaho 
@@ -23,7 +24,19 @@
   (defn initialize
     "Initialize the system, read config-file and install interfaces."
     []
-    (let [lpf "(initialize): "]
+    (let [lpf "(initialize): "
+          lookup-jndi (fn [dbCfg]
+                        ;; if db is a string, then this string is used to lookup a jndi-connnection
+                        ;;  in the pentaho-hibernate database.
+                        (let [db (:db dbCfg)]
+                          (if (string? db)
+                            (if-let [dbParams (pConn/find-connection db)]
+                              (do
+                                (debug lpf "jndi " db " translates to connection-parameters: "
+                                       (with-out-str (pprint (assoc dbParams :password "..."))))
+                                (assoc dbCfg :db dbParams))
+                              (error lpf "Could not find jndi/connection for name: " db))
+                            dbCfg)))]   ;; return unmodified
       (when (not @initialized?)
         (info "Initialize the CDM.")
         (swap! initialized? (fn [_] true))
@@ -35,7 +48,7 @@
         
         ;; select the persistent-storage backend (and initialize the databases when needed)
         (if-let [databaseCfg @(ns-resolve 'vinzi.cdp.ns.cdm 'databaseCfg)] 
-          (ips/init-persistentstore databaseCfg)
+          (ips/init-persistentstore (lookup-jndi databaseCfg))
           (error lpf "Could not resolve vinzi.cdp.ns.cdm/databaseCfg"))
         (info "Initialization of the CDM finished." ))))
 
@@ -124,6 +137,7 @@
     ))
 
 
+
 ;; TODO: Add a locking mechanisme to prevent two users from simultaneously modifying the same dashboard/track
 ;; (should this locking be in jsonMgt.core or here?)
 
@@ -146,7 +160,8 @@
                           (let [response (with-out-str
                                              (jmgt/processCommand commandRec))
                                 response (if (or (nil? response)
-                                                 (= response ""))
+                                                 (= response "")
+                                                 (not (jmgt/returnTextOutput command)))
                                            (str "Succesfull performed command "
                                                 commandRec)
                                              response)]

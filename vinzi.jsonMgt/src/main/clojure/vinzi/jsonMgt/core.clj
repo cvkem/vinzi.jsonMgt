@@ -19,19 +19,19 @@
 	   [java.io File BufferedReader]))
 
 ;; usage of the next few lines should be replaced by vFile.
-(def regExpSepator  (if (= File/separator "\\")
-			#"\\" #"/"))
-(def searchSep (if (= File/separator "\\")
-			"/" "\\"))
-(def theSep (if (= File/separator "\\")
-		  "\\" "/"))
-
-(def regExpIsFilename  (if (= File/separator "\\")
-			 #"[.\\]" #"[./]"))
-(defn isFilename?
-  "Assumes name is a filename if it contains '.' or a file-separator character."
-  [name]
-  (re-find regExpIsFilename  name))  
+;(def regExpSepator  (if (= File/separator "\\")
+;			#"\\" #"/"))
+;(def searchSep (if (= File/separator "\\")
+;			"/" "\\"))
+;(def theSep (if (= File/separator "\\")
+;		  "\\" "/"))
+;
+;(def regExpIsFilename  (if (= File/separator "\\")
+;			 #"[.\\]" #"[./]"))
+;(defn isFilename?
+;  "Assumes name is a filename if it contains '.' or a file-separator character."
+;  [name]
+;  (re-find regExpIsFilename  name))  
 
 
 (defn set-doc-root [dr]
@@ -148,14 +148,13 @@
 
 
 
-(defn stripDefaultPostfix [name]
-  (let [regExp (re-pattern (str (str/replace defPostfix "." "\\.") "$"))]
-;;    (cstr/replace-re regExp "" name)))
-    (str/replace name regExp "")))
+;(defn stripDefaultPostfix [name]
+;  (let [regExp (re-pattern (str (str/replace defPostfix "." "\\.") "$"))]
+;    (str/replace name regExp "")))
 
-
-(defn correctSeparator [name]
-  (str/replace name searchSep theSep))
+;
+;(defn correctSeparator [name]
+;  (str/replace name searchSep theSep))
 
 ;; TODO: recognize windows absolute paths (start with c:\)
 (defn extendFSPath
@@ -187,30 +186,35 @@
   (str (stripDefaultPostfix filename) cdaPostfix))
 
 
-(defn deriveWcdfFilename
+(defn derive-wcdf-filename
   "derive a cda-filename from the .cdfde filename."
   [filename]
   (str (stripDefaultPostfix filename) wcdfPostfix))
-
-(defn getFileName
-  "Get the filename by stripping of the path-part and trimming redundant spaces."
-  [filename]
-  (-> filename
-      (correctSeparator)
-      (str/split regExpSepator)
-      (last)
-      (str/trim)))
+;
+;(defn get-filename
+;  "Get the filename by stripping of the path-part and trimming redundant spaces."
+;  [filename]
+;  (-> filename
+;      (correctSeparator)
+;      (str/split regExpSepator)
+;      (last)
+;      (str/trim)))
 
 (defn replace-filename [filename newName]
-  (let [fName (getFileName filename)
+  (let [fName (get-filename filename)
         fBase (apply str (take (- (count filename) (count fName)) filename))]
     (str fBase newName)))
         
 
+(defn add-last-suffix 
+  "splice in a _last suffix to the (base) file-name."
+  [srcFile]
+  (str (stripDefaultPostfix (get-filename srcFile)) "_last" defPostfix))
+
 (defn getDirectory
   "Get the directory of a 'filePath' "
   [filePath]
-  (apply str (take (dec (- (count filePath) (count (getFileName filePath)))) filePath)))
+  (apply str (take (dec (- (count filePath) (count (get-filename filePath)))) filePath)))
 
 
 (defn directoryExists
@@ -226,32 +230,34 @@
           (trace lpf "exists: " res)
           res)))))
 
+;; moved to vinzi.jsonMgt.global
+; 
+;(defn cleanStr
+;  "Cleanse string by replacing all characters that mysql dislikes in unquoted identifiers by an _ ."
+;  [s]
+;  (let [fx  (fn [c]
+;              (let [bc (int c)
+;                    underscore  \_ ]
+;                (if (or  (and (>= bc (int \a)) (<= bc (int \z)))
+;                         (and (>= bc (int \A)) (<= bc (int \Z)))
+;                         (and (>= bc (int \0)) (<= bc (int \9)))
+;                         (= c \$)
+;                         (= c \\)
+;                         (= c \:)
+;                         (= c \/))
+;                  c  underscore)))]	     
+;    (apply str (map fx s))))
 
-(defn cleanStr
-  "Cleanse string by replacing all characters that mysql dislikes in unquoted identifiers by an _ ."
-  [s]
-  (let [fx  (fn [c]
-              (let [bc (int c)
-                    underscore  \_ ]
-                (if (or  (and (>= bc (int \a)) (<= bc (int \z)))
-                         (and (>= bc (int \A)) (<= bc (int \Z)))
-                         (and (>= bc (int \0)) (<= bc (int \9)))
-                         (= c \$)
-                         (= c \\)
-                         (= c \:)
-                         (= c \/))
-                  c  underscore)))]	     
-    (apply str (map fx s))))
-
-(defn getTrackName
-  "Extract the base-filename (without extension) and change it to a database-friendly format (no white-space, no '.' and completely lower-case."
-    [filename]
-  (-> filename
-      (getFileName)
-      (stripDefaultPostfix)
-      (cleanStr)
-      (str/lower-case)))
-
+;; moved to vinzi.jsonMgt.global
+;(defn get-track-name
+;  "Extract the base-filename (without extension) and change it to a database-friendly format (no white-space, no '.' and completely lower-case."
+;    [filename]
+;  (-> filename
+;      (get-filename)
+;      (stripDefaultPostfix)
+;      (cleanStr)
+;      (str/lower-case)))
+;
 
 
 
@@ -407,8 +413,8 @@
 ;;     normJson))
 
 (defn generate-wcdf [fileName]
-  (let [fName (getFileName fileName)
-        fName (apply str (take (- (count fName) (count cdfdePostfix)) fName)) 
+  (let [fName (get-filename fileName)
+        fName (apply str (take (- (count fName) (count defPostfix)) fName)) 
         contents (str "<cdf><title>" fName "</title>"
                       "<author/>"
                       "<description></description>"
@@ -417,10 +423,10 @@
                       "</cdf>")]
     contents))
 
-(defn- writeVersionFS
+(defn- write-version-FS
   "Write a version of the cdfde-file, the wcdf-file and the cda-file to the file-system. The cda-file is derived from the cdfde-file."
   ([trackInfo contents obj]
-    (writeVersionFS trackInfo contents obj nil))
+    (write-version-FS trackInfo contents obj nil))
   ([trackInfo contents obj newName]
   {:pre [(map? trackInfo) (isJson? contents)]}
   (let [{filename :file_location} trackInfo
@@ -430,8 +436,8 @@
         filename (extendFSPath filename)
         cda      (cda/generateCda (jsonZipper obj))
         cdaFile  (deriveCdaFilename filename)
-        wcdf      (deriveCdaFilename filename)
-        wcdfFile (deriveCdaFilename filename)]
+        wcdf     (generate-wcdf filename)
+        wcdfFile (derive-wcdf-filename filename)]
     
     ;	(str (apply str (take (- (count filename) 5) filename)) "cda")]
     (spit filename contents)
@@ -491,7 +497,7 @@
   [file]
   ;; TODO: ?? get rid of absolute path (when using pentaho-solution folder)
   (let [fileLoc   (simplifyFSPath (.getAbsolutePath file))
-	trackName (getTrackName fileLoc)
+	trackName (get-track-name fileLoc)
 	;; create a track-info record
 	trackInfo  (ps_createTrack trackName fileLoc)]
     trackInfo))
@@ -521,8 +527,8 @@
                   (writeActionEntry track_name dt
                                     (format "Created new Track for: %s" track_name))))
               nil)  ;; no trackInfo returned (no track created)
-            (addMessage (getTrackName filename) "File with name %s is not a valid JSON-file" filename)))
-        (addMessage (getTrackName filename) "File with name %s could not be located" filename)))))
+            (addMessage (get-track-name filename) "File with name %s is not a valid JSON-file" filename)))
+        (addMessage (get-track-name filename) "File with name %s could not be located" filename)))))
 
 
 
@@ -532,7 +538,7 @@
        (b) the .cdfde, .wcdf and .cda files at the given location."
   [[srcTrack & dstPaths]]
   (let [lpf "(cleanCopyTracks): "
-        srcTrack (getTrackName srcTrack)
+        srcTrack (get-track-name srcTrack)
         srcInfo  (ps_getTrackInfo srcTrack)
         ;;srcTrack (:track_name srcInfo)
         ]
@@ -541,8 +547,8 @@
         (if-let [srcObj  (:obj (getCommit srcTrack))]
           ;; start inner loop (per dstPath)
           (doseq [dstTrack dstPaths]
-            (let [ ;;  added getTrackName on enxt line (sept 2012)
-                  filename (extendFSPath (getTrackName dstTrack))  ;; prepend document-root
+            (let [filename (extendFSPath dstTrack)  ;; prepend document-root
+                  _ (debug "Received dst-treack " dstTrack "  which extends to full-filename: "  filename)
                   base  (stripDefaultPostfix filename)
                   cdfdeName (str base cdfdePostfix)
                   cdfde  (File. cdfdeName)
@@ -565,7 +571,7 @@
                           (when trackInfo
                             ;;			  (createTrackTables trackName)
                             (ps_writeCommit trackId contents dt)
-                            (writeVersionFS trackInfo contents dstObj)
+                            (write-version-FS trackInfo contents dstObj)
                             (writeActionEntry newTrack dt
                                               (format (str "Derived clean copy of track '%s'"
                                                            "with new name '%s' and path '%s'.")
@@ -586,20 +592,21 @@
   [srcTracks]
   (let [lpf "(checkout-copy-last): "]
     (if (= (count srcTracks) 1)
-      (let [srcTrack (getTrackName (first srcTracks))
+      (let [srcTrack (get-track-name (first srcTracks))
             srcInfo  (ps_getTrackInfo srcTrack)
             ;;srcTrack (:track_name srcInfo)
             ]
         (if-let [srcFile (getTrackFilePath srcInfo)]
           (if-let [srcObj  (:obj (getCommit srcTrack))]
-            (let [newName    (str srcTrack "_last" cdfdePostfix)  
+            (let [newName  (add-last-suffix srcFile)   
+                  ;; (str srcTrack "_last" cdfdePostfix)  
                   contents   (getJsonRepr srcObj)
                   dt         (getCurrDateTime)]
-            (writeVersionFS srcInfo contents srcObj newName)
-            (writeActionEntry srcTrack dt
-                              (format (str "Checked out a copy of '%s'"
+              (write-version-FS srcInfo contents srcObj newName)
+              (writeActionEntry srcTrack dt
+                                (format (str "Checked out a copy of '%s'"
                                            "to new name '%s'.")
-                                      srcTrack newName)))
+                                        srcTrack newName)))
             (addMessage srcTrack "Failed to read last commit from the database."))
           (addMessage srcTrack "The file-path could not be found")))
       (addMessage (first srcTracks) (str "In (checkout-copy-last) Expected exactly one srcTrack, "
@@ -643,7 +650,7 @@
   [args]
   (doseq [trackName args]
     (let [lpf "(commitVersion): "
-          trackInfo (ps_getTrackInfo (getTrackName trackName))
+          trackInfo (ps_getTrackInfo (get-track-name trackName))
           nme (:track_name trackInfo)]
       (if-let [dt (commitTrackPatches trackInfo)]
         (writeActionEntry nme dt
@@ -670,7 +677,7 @@
   "Open a graphical viewer for each of the tracks."
   [args]
   (doseq [trackName args]
-    (let [trackName (getTrackName trackName)]
+    (let [trackName (get-track-name trackName)]
 	  (diffViewer trackName))))
 
 
@@ -678,7 +685,7 @@
   "Show the differences for one or more tracks"
   [args]
   (doseq [trackName args]
-    (let [trackInfo         (ps_getTrackInfo (getTrackName trackName))
+    (let [trackInfo         (ps_getTrackInfo (get-track-name trackName))
 	  {:keys [patches]} (getPatchesFS trackInfo)]
       (println (format "The difference from the last commit on track '%s' are:" trackName))
       ;; TODO:  replace by a doall
@@ -722,8 +729,8 @@
   "Apply the patches from 'depth' commits back in time until current commit of 'srcTrack' to 'dstTrack'." 
   [srcTrack dstTrack depth]
   (let [lpf "(applyPatchesSrcDst): "
-        srcTrack (getTrackName srcTrack)
-        dstTrack (getTrackName dstTrack)
+        srcTrack (get-track-name srcTrack)
+        dstTrack (get-track-name dstTrack)
         srcInfo  (ps_getTrackInfo srcTrack)
         dstInfo  (ps_getTrackInfo dstTrack)
         srcId    (:track_id srcInfo)
@@ -736,7 +743,7 @@
               (if-let [dst (:obj (getCommit dstInfo))]
                 (if-let [{modDst :obj} (applyPatchesCdfde dst patches dstTrack)]
                   (let [jsonDst  (getJsonRepr modDst)]
-                    (if (writeVersionFS dstInfo jsonDst modDst)
+                    (if (write-version-FS dstInfo jsonDst modDst)
                       (if-let [dt (commitTrackPatches dstInfo)]
                         (writeActionEntry dstTrack dt
                                           (format "Committed updated version of '%s'." dstTrack))
@@ -755,11 +762,11 @@
   [args]
   (doseq [trackName args]
     (let [lpf "(revertToCommit): "
-          track (getTrackName trackName)
+          track (get-track-name trackName)
           dt (getCurrDateTime)]
       (if (confirmReader (format "Overwite the files in the filesystem for track '%s'?" track))
         (if-let [{:keys [json obj]} (getCommit track)]
-          (if (writeVersionFS track json obj)
+          (if (write-version-FS track json obj)
             (writeActionEntry track dt
                               (format "Checked-out version of '%s' to file-system" track))
             (addMessage track "Failed to check-out the new version to the file-system"))
@@ -782,7 +789,7 @@
   [args]
   (doseq [trackName args]
     (let [lpf "(dropLastCommit): "
-          track (getTrackName trackName)
+          track (get-track-name trackName)
           cdt (getCurrDateTime)]
       (if (confirmReader (format "Drop last commit of '%s'?" track))
         (if-let [trackInfo (ps_getTrackInfo track)]
@@ -870,8 +877,8 @@
 (defn applyPatches [args]
   (if (and (>= (count args) 2)  (<= (count args) 3))
     (let [[srcTrack  dstTrack depthStr] args
-	  srcTrack (getTrackName srcTrack)  ;; normalize the track-names
-	  dstTrack (getTrackName dstTrack)
+	  srcTrack (get-track-name srcTrack)  ;; normalize the track-names
+	  dstTrack (get-track-name dstTrack)
 	  depth (if depthStr (Integer/parseInt depthStr) 1)
 	  depth (dec depth)]  ;; apply last 2 commmits means depth 1
       (applyPatchesSrcDst srcTrack dstTrack depth)) 
@@ -913,6 +920,8 @@
       "list-actions"  listActions
       "list-errors"  listErrors
       })
+
+(def returnTextOutput #{  "diff" "help" "dirty" "list-actions" "list-errors"})
 
 (def commandMaxSrcMap
      {

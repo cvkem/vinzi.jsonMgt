@@ -4,7 +4,8 @@
   ;; line added as binding of globals does not work yet (renamed functions in database.clj )
   (:use [vinzi.jsonMgt persistentstore]
         [vinzi.jsonMgt.hib.clj errorEntry actionEntry])
-  (:require [vinzi.tools
+  (:require [clojure.string :as str]
+            [vinzi.tools
 ;;             [vSql :as vSql]
              [vExcept :as vExcept]])
   (:import [java.util Date]
@@ -99,13 +100,76 @@
   [location e]
   (vExcept/report location e))
 
+;; usage of the next few lines should be replaced by vFile.
+(def regExpSepator  (if (= java.io.File/separator "\\")
+			#"\\" #"/"))
+(def searchSep (if (= java.io.File/separator "\\")
+			"/" "\\"))
+(def theSep (if (= java.io.File/separator "\\")
+		  "\\" "/"))
+
+(def regExpIsFilename  (if (= java.io.File/separator "\\")
+			 #"[.\\]" #"[./]"))
+(defn isFilename?
+  "Assumes name is a filename if it contains '.' or a file-separator character."
+  [name]
+  (re-find regExpIsFilename  name))  
+
+
+
+
+(defn stripDefaultPostfix [name]
+  (let [regExp (re-pattern (str (str/replace defPostfix "." "\\.") "$"))]
+;;    (cstr/replace-re regExp "" name)))
+    (str/replace name regExp "")))
+
+
+(defn correctSeparator [name]
+  (str/replace name searchSep theSep))
+
+(defn get-filename
+  "Get the filename by stripping of the path-part and trimming redundant spaces."
+  [filename]
+  (-> filename
+      (correctSeparator)
+      (str/split regExpSepator)
+      (last)
+      (str/trim)))
+
+
+(defn cleanStr
+  "Cleanse string by replacing all characters that mysql dislikes in unquoted identifiers by an _ ."
+  [s]
+  (let [fx  (fn [c]
+              (let [bc (int c)
+                    underscore  \_ ]
+                (if (or  (and (>= bc (int \a)) (<= bc (int \z)))
+                         (and (>= bc (int \A)) (<= bc (int \Z)))
+                         (and (>= bc (int \0)) (<= bc (int \9)))
+                         (= c \$)
+                         (= c \\)
+                         (= c \:)
+                         (= c \/))
+                  c  underscore)))]	     
+    (apply str (map fx s))))
+
+;; moved here to use it in addErrEntry
+(defn get-track-name
+  "Extract the base-filename (without extension) and change it to a database-friendly format (no white-space, no '.' and completely lower-case."
+    [filename]
+  (-> filename
+      (get-filename)
+      (stripDefaultPostfix)
+      (cleanStr)
+      (str/lower-case)))
+
 
 
 
 (defn addErrEntry
   "Used by addMessage and to directly write a series of messages (errors)."
   [msg dt track]
-  (let [errEntry (create-errorEntry dt track currCommand msg (getUserName))]
+  (let [errEntry (create-errorEntry dt (get-track-name track) currCommand msg (getUserName))]
     (ps_writeErrorEntry errEntry)))
 
 ;; OLD version, which did not use the exception handling mechanism

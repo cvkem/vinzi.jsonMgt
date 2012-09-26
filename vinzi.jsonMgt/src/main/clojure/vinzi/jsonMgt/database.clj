@@ -36,12 +36,14 @@
 	 :user  "SA"
 	 :password ""})
 
-(defn generateDb [{:keys [classname subprotocol
+(defn generate-db [{:keys [classname subprotocol
 			  db-host db-port db-name
+        subname
 			  user password]}]
+  {:pre [(not (and subname db-host))]}  ;; either subname or the triple db-host db-port and db-name should be defined.
  (def db {:classname classname ; must be in classpath
           :subprotocol subprotocol
-          :subname (str "//" db-host ":" db-port "/" db-name)
+          :subname (if subname subname (str "//" db-host ":" db-port "/" db-name))
           :user user
           :password password}))
 
@@ -96,8 +98,10 @@
 			   (format "CREATE SCHEMA %s;" db_scheme)))))
 
 
-(defn setDbsRecord [dbName dbType]
-  (def dbs (into dbs (into dbName dbType))))
+(defn extend-dbs-record
+  "Extend the dbs-record by merging in the corrections of :dbTypes. "
+  [dbCfg]
+  (def dbs (into dbs (:dbTypes dbCfg))))
 
 (declare initScheme)
 
@@ -409,9 +413,8 @@
     (if cfg
       (do
         ;; adjust the global db-record
-        (generateDb (:db cfg))
-        (let [{:keys [dbName dbType]} cfg]
-          (setDbsRecord dbName dbType))
+        (generate-db (:db cfg))
+        (extend-dbs-record cfg)
         (debug lpf "configured database based on config-file db=" (with-out-str (pprint db))))
       (do
         (warn lpf "Install in-memory temporary database for demonstation."

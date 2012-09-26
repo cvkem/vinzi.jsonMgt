@@ -98,38 +98,40 @@ function updateTable(tblSel, srcSel, targetDiv) {
 	  updateTable('errors', srcSel, '#errorDiv');
 	};
 
+	/*
+	 *  Routines to ask for a destination and complete a command.
+	 */
 	var partialCommand = null;  // used to store command that still needs a destination via the 'destPopup' window 
 
-	// needs a destination value.
-	function finish_partialCommand() {
+	function ask_dest_run_action (action) {
+		// prepare a partial command
+	  partialCommand = 	action;
+	  // and popup the window to get a destination (ok-button will proceed, cancel will clear the partialCommand.
+	  $('.destPopup').show();
+	  return;
+	}
+	function dst_ok_button () { 
+	    dstFv.accept();
+	    // finish the partial command
 		if (partialCommand == null) {
 			alert(" STRANGE!! no command available");
 			return;
 		}
-		partialCommand.dst = dstBox.getValue();
-
-	    cdpExec(partialCommand, function (d, s) {
-            if (d.length > 0)
-            	alert(d);
-            updateLogTables(srcBox.getValue());   //() added
-        });
+		run_action_full (partialCommand, srcBox.getValue(), dstBox.getValue(), msg);
 		partialCommand = null;
-		return;
-	};
-
- function dst_ok_button () { 
-	    dstFv.accept();
-	    finish_partialCommand();
-	    destPopup.hide();
+	    $('.destPopup').hide();
 	    return;};
 
- function dst_cancel_button () { 
+   function dst_cancel_button () { 
 	    dstFv.reject();
 	    partialCommand = null;  // operation cancelled
-	    destPopup.hide();
+	    $('.destPopup').hide();
 	    return;
 	};
 	
+
+
+ 
 
 
 /*
@@ -139,50 +141,35 @@ function updateTable(tblSel, srcSel, targetDiv) {
 */
 
 	
+function run_action_full (action, src, dsts, msg) {
+		    var pars = {accessId: 'process-jsonMgt-command',
+		                  action: action,
+		                  user: getCurrentUser(),
+		                  source: src,
+		                  destinations: dsts,
+		                  msg: msg  };
+		                                            
+		    cdpExec(pars, function (d, s) {
+		    	                            if (d.length > 0)
+		    	                            	alert(d);
+		                                    updateLogTables(srcBox.getValue());  //() added
+		                                });
+		   return;
+		};
+
+	
 function run_action (action) {
-	    var pars = {accessId: 'process-jsonMgt-command',
-	                  action: action,
-	                  user: getCurrentUser(),
-	                  source: "",
-	                  destinations: "",
-	                  msg: ( arguments[1] ) ? arguments[1] : ""  };
-	                                            
-	    cdpExec(pars, function (d, s) {
-	    	                            if (d.length > 0)
-	    	                            	alert(d);
-//	                                    updateLogTables(srcBox.getValue());  //() added
-	                                });
-	   return;
+	var msg = ( arguments[1] ) ? arguments[1] : "";
+	run_action_full (action, "", "", msg);
+	return;
 	};
 	
 	
 function run_action_src (action) {
-    var pars = {accessId: 'process-jsonMgt-command',
-                  action: action,
-                  user: getCurrentUser(),
-                  source: srcBox.getValue(),
-                  destinations: "",
-                  msg: ( arguments[1] ) ? arguments[1] : ""   };
-                                            
-    cdpExec(pars, function (d, s) {
-    	                            if (d.length > 0)
-    	                            	alert(d);
-                                    updateLogTables(srcBox.getValue());  //() added
-                                });
+	var msg = ( arguments[1] ) ? arguments[1] : "";
+	run_action_full (action, srcBox.getValue(), "", msg);
    return;
 };
-
-function add_dest_run_action (action) {
-	// prepare a partial command
-  partialCommand = 	{accessId: 'process-jsonMgt-command',
-          action: action,
-          source: srcBox.getValue(),
-          destinations: "",
-          msg: ( arguments[1] ) ? arguments[1] : ""   };
-  // and popup the window to get a destination (ok-button will proceed, cancel will clear the partialCommand.
-  $('.destPopup').show();
-  return;
-}
 
 function helpFunc () 
 {
@@ -239,7 +226,48 @@ $(function () {
                          }
                      }
  		});  // END of commitDialog
-                        	
+
+	// Get the commit-message and add a commit
+	$("#duplicTrackDialog").dialog({autoOpen: false,
+                    width: 450,
+                    modal: true,
+                    closeText: 'Annuleer',
+                    open: function() {
+                      try {
+                    	  var dialogPrefix = '#duplicTrackDialog ';
+                         // set information items at top of box.
+                         $(dialogPrefix+'#src').html(srcBox.getValue());
+                         
+                         // set the dialog-defaults
+                         $(dialogPrefix+'#dst').val('');
+
+                         return;
+                       } catch (err) {
+                               showError('Error during "Open duplicTrack-dialog":', err);
+                       }
+
+                     },
+                     buttons: {
+                         "Duplicate": function() {
+                           try {
+                               var dialogPrefix = '#duplicTrackDialog ';
+ 
+                               var dst = $(dialogPrefix+'#dst').val();
+
+                               run_action_full ('clean-copy', srcBox.getValue(), dst, "");
+                             
+                               $(this).dialog('close');
+                             return;
+                           } catch (err) {
+                               showError('Error during "duplicTrack" dialog:', err);
+                           }
+                         }
+                     }
+ 		});  // END of commitDialog
+
+	
+	
+	
 	// Get the commit-message and add a commit
 	$("#errorWindow").dialog({autoOpen: false,
                     width: 450,
@@ -265,7 +293,7 @@ $(function () {
                              return;
                          }
                      }
- 		});  // END of commitDialog
+ 		});  // END of errorWindow
                         	
 });  // END of dialog handlers
 /*

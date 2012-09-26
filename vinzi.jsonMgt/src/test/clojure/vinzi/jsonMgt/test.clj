@@ -193,12 +193,12 @@
   (is (not (testDbTableExists (dbps/getActionLogDb))) "initially no action_log")
 
   ;; test how the track-name is extracted
-  (is (=  (getTrackName "/home/cees/test")  "test"))
-  (is (=  (getTrackName "/home/cees/test.json")  "test"))  ;; assuming .json as default-prefix
-  (is (=  (getTrackName "/with_space/cees/test  ")  "test"))
-  (is (=  (getTrackName "  /with_space/cees/test  ")  "test"))
-  (is (=  (getTrackName "  /with_space/cees/TeSt  ")  "test"))
-  (is (=  (getTrackName "  /with_space/cees/t e.st  ")  "t_e_st"))
+  (is (=  (get-track-name "/home/cees/test")  "test"))
+  (is (=  (get-track-name "/home/cees/test.json")  "test"))  ;; assuming .json as default-prefix
+  (is (=  (get-track-name "/with_space/cees/test  ")  "test"))
+  (is (=  (get-track-name "  /with_space/cees/test  ")  "test"))
+  (is (=  (get-track-name "  /with_space/cees/TeSt  ")  "test"))
+  (is (=  (get-track-name "  /with_space/cees/t e.st  ")  "t_e_st"))
 
   ;; ;; creation of track database for orgFile
   (testProcess "create %s" orgFile)
@@ -213,7 +213,7 @@
   (is (thrown? Exception 
                (testNotProcess "create %s" orgFile)))
   
-  (is (sameTail (getTrackFilePath (getTrackName "orgFile.json")) "/test-data/orgFile.json")
+  (is (sameTail (getTrackFilePath (get-track-name "orgFile.json")) "/test-data/orgFile.json")
        "TrackFilePath should have the correct tail (head differs per system)")
 
    (is (testTableSize (dbps/getCommitDb) = 1) "Expected one record in track-db")
@@ -237,13 +237,13 @@
   ;; ;; check on diff and dirty flags
   (println "VISUAL CHECK: diff should find no differences")
   (testProcess "diff %s " orgFile)
-  (is (not (trackDirty? (getTrackName orgFile)))
+  (is (not (trackDirty? (get-track-name orgFile)))
         "orgFile should not be dirty (modified) yet")
-   (testProcess "diff %s " (getTrackName orgFile))
+   (testProcess "diff %s " (get-track-name orgFile))
 
   ;; ;; change the file
   (replaceOrgFile)
-  (is (trackDirty? (getTrackName orgFile)) "Change orgFile not detected?")
+  (is (trackDirty? (get-track-name orgFile)) "Change orgFile not detected?")
 
   (println "VISUAL CHECK: one file dirty, the other unmodified.")
   (testProcess "dirty")
@@ -254,7 +254,7 @@
   (testProcess "commit %s" orgFile)
   (is (testTableSize (dbps/getCommitDb) = 3) "Expected three records in track-db (2 for orgFile)")
   (is (testTableSize (dbps/getPatchDb) = 1) "Expected one record in patch-db")
-  (is (not (trackDirty? (getTrackName orgFile)))
+  (is (not (trackDirty? (get-track-name orgFile)))
       "changes are commited so file should be clean (not-dirty).")
 
   (testProcess "apply %s %s " orgFile target1File)
