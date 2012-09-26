@@ -49,14 +49,29 @@ function getCurrentUser() {
 }
 
 
-function cdpExec(pars, updateFunc) {
+function cdpExec(pars, updateFunc, acceptError) {
     if ((typeof theCdpFile !== 'string') || (theCdpFile.length == 0))
         console.log("expected to receive string 'cdpFile'. Received: "+theCdpFile);
     var base="/pentaho/content/cdp/exec?"+theCdpFile;
     
 //    alert ('Going to call  CDP with parameters: '+ strObj(pars));
     
-    $.post(base, pars, updateFunc);
+    var jqXhr = $.post(base, pars, function (data, status) {
+//    	alert('received status='+status+'\n and data='+data);
+    	updateFunc(data, status)})
+    	// add an error-handler to the deferred object
+    	.error(function(xhr) { 
+    		if (! (acceptError == true)) {
+    		  var errWin = $('#errorWindow');
+              errWin.data('errorMsg', xhr.responseText);
+              errWin.dialog('open');
+    		}
+            /*
+    		alert("An error occurred during the processin of the command with parameters:\n"+
+    			      strObj(pars)+
+    			      "\n status="+xhr.status+
+    			      "\n responsetext="+xhr.responseText); */ 
+    		});
     
     return;
 };
@@ -71,7 +86,7 @@ function updateTable(tblSel, srcSel, targetDiv) {
 		  					alert('can only handle first element. Discarding'+data.slice(1));
 		  				var data = data[0];  // take first element
 		  				$(targetDiv).html(data);
-		      });
+		      }, true);
 	};
 
 	function updateLogTables(srcSel) {
@@ -187,7 +202,7 @@ function helpFunc ()
 }
 
 $(function () {
-	// Add a new exclusion (or update an existing exclusion)
+	// Get the commit-message and add a commit
 	$("#commitDialog").dialog({autoOpen: false,
                     width: 450,
                     modal: true,
@@ -221,6 +236,33 @@ $(function () {
                            } catch (err) {
                                showError('Error during "Commit":', err);
                            }
+                         }
+                     }
+ 		});  // END of commitDialog
+                        	
+	// Get the commit-message and add a commit
+	$("#errorWindow").dialog({autoOpen: false,
+                    width: 450,
+                    modal: true,
+                    closeText: 'Annuleer',
+                    open: function() {
+                      try {
+                    	  var dialogPrefix = '#errorWindow ';
+
+                         // set information items at top of box.
+                    	 var errorMsg = $(this).data('errorMsg')
+                         $(dialogPrefix+'#errorMsg').html( errorMsg );
+
+                         return;
+                       } catch (err) {
+                               showError('Error during "Open error-window":', err);
+                       }
+
+                     },
+                     buttons: {
+                         "OK": function() {
+                             $(this).dialog('close');
+                             return;
                          }
                      }
  		});  // END of commitDialog

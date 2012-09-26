@@ -181,18 +181,18 @@
 
 
 
-(defn- existsTable
+(defn- existsTable?
   "Check whether the tables 'name' exists."
   [name]
-  (let [lpf "(existsTable): "]
+  (let [lpf "(existsTable?): "]
     (try
       (sql/with-query-results recs
                               [(format "SELECT COUNT(*) FROM %s;" name)]
                               true)   ;; table exists (no exception)
       (catch Exception e
-        (do
+          ;; failure can be expected
           (debug lpf "mess: " (.getMessage e))
-          false))))) 
+          false)))) 
 
 
 
@@ -205,7 +205,7 @@
   (let [lpf "(initScheme): "]
     (letfn [(checkTable [tableName & tableSpecs]
                         (debug lpf "check table: " tableName) 
-                        (if (existsTable tableName)
+                        (if (existsTable? tableName)
                           true
                           (if (confirmReader (format "Create table '%s'" tableName))
                             (let [dt (getCurrDateTime)]
@@ -258,21 +258,22 @@
 (defn db_createTrack
   "add an information record for this track, and returns the full trackInfo record for this track (used to generate other tables)."
   [trackName fileLocation]
-  (let [trackInfoDb (getTrackInfoDb)
-	getTrackRec (format "SELECT * FROM %s WHERE %s = '%s'"
-	       trackInfoDb "track_name" trackName)]
+  (let [lpf "(db_createTrack): "
+        trackInfoDb (getTrackInfoDb)
+        getTrackRec (format "SELECT * FROM %s WHERE %s = '%s'"
+                            trackInfoDb "track_name" trackName)]
     ;; create a track-info record
     (sql/with-query-results recs [getTrackRec]
-      (if (>  (count recs) 0)
-	(do
-	  (addMessage trackName "Track already exists in database.")
-	  nil)  ;; return nil (signaling no track generated
-	(do
-	  (sql/insert-records
-	   trackInfoDb
-	   {:file_location fileLocation   :track_name trackName})
-	  (sql/with-query-results recs [getTrackRec]
-	    (first recs)))))))
+                            (if (>  (count recs) 0)
+                              (do
+                                (addMessage trackName "Track already exists in database.")
+                                nil)  ;; return nil (signaling no track generated
+                              (do
+                                (sql/insert-records
+                                  trackInfoDb
+                                  {:file_location fileLocation   :track_name trackName})
+                                (sql/with-query-results recs [getTrackRec]
+                                                        (first recs)))))))
 
 
 

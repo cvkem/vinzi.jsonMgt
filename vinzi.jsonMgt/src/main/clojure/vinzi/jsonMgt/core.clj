@@ -12,6 +12,7 @@
 	     ;;[clojure.java.io :as jio :only [resource]]
       [clojure.data.json :as json]
 	     [clojure.java.io :as io]
+      [vinzi.tools.vExcept :as vExcept]
       [vinzi.pentaho.genCda :as cda])
   (:import [java.sql SQLException]
 	   [vinzi.json.jsonDiff Patch]
@@ -230,16 +231,16 @@
   "Cleanse string by replacing all characters that mysql dislikes in unquoted identifiers by an _ ."
   [s]
   (let [fx  (fn [c]
-	      (let [bc          (int c)
-		    underscore  \_ ]
-		(if (or  (and (>= bc (int \a)) (<= bc (int \z)))
-			 (and (>= bc (int \A)) (<= bc (int \Z)))
-			 (and (>= bc (int \0)) (<= bc (int \9)))
-			 (= c \$)
-			 (= c \\)
-			 (= c \:)
-			 (= c \/))
-		  c  underscore)))]	     
+              (let [bc (int c)
+                    underscore  \_ ]
+                (if (or  (and (>= bc (int \a)) (<= bc (int \z)))
+                         (and (>= bc (int \A)) (<= bc (int \Z)))
+                         (and (>= bc (int \0)) (<= bc (int \9)))
+                         (= c \$)
+                         (= c \\)
+                         (= c \:)
+                         (= c \/))
+                  c  underscore)))]	     
     (apply str (map fx s))))
 
 (defn getTrackName
@@ -265,35 +266,36 @@
 (defn getExpandedTrackList
   ""
   [trackList]
-  (let [allTracks (ps_getAllTracks)
-	findMatches   (fn [tr column]
-			;; create tuples with 'column' as first field and :track_name as second
-			(let [pat (wholeWordRegexp tr)
-			      tuples (map (fn [x] [(column x) (:track_name x) ]) allTracks)
-			      res (filter #(not (zero? (count (re-find pat (first %))))) tuples)]
-			  (map second res)))
-	expandTrackOrFile (fn [tr]
-			    ;; TODO: recognize c:\... as a filename
-			    (if (isFilename? tr) ;; it is a filename
-			      (let [tr  (simplifyFSPath (extendFSPath tr))
-				    res (findMatches tr :file_location)]
-				(if (zero? (count res))
-				  (addMessage "--" "Could not find file(s) '%s'", tr)
-				  res))
-			      (let [res (findMatches tr :track_name)]
-				(if (zero? (count res))
-				  (addMessage "--" "Could not find track(s) '%s'", tr)
-				  res))))
-	removeDuplic (fn [cumm tracks]
-		       (if (seq tracks)
-			 (let [track (first tracks)
-			       cumm (if (some #(= track %) cumm) cumm (conj cumm track))]
-			   (recur cumm (rest tracks)))
-			 cumm))
-	]
+  (let [lpf "(getExpandedTrackList): "
+        allTracks (ps_getAllTracks)
+        findMatches   (fn [tr column]
+                        ;; create tuples with 'column' as first field and :track_name as second
+                        (let [pat (wholeWordRegexp tr)
+                              tuples (map (fn [x] [(column x) (:track_name x) ]) allTracks)
+                              res (filter #(not (zero? (count (re-find pat (first %))))) tuples)]
+                          (map second res)))
+        expandTrackOrFile (fn [tr]
+                            ;; TODO: recognize c:\... as a filename
+                            (if (isFilename? tr) ;; it is a filename
+                              (let [tr  (simplifyFSPath (extendFSPath tr))
+                                    res (findMatches tr :file_location)]
+                                (if (zero? (count res))
+                                  (addMessage "--" "Could not find file(s) '%s'", tr)
+                                  res))
+                              (let [res (findMatches tr :track_name)]
+                                (if (zero? (count res))
+                                  (addMessage "--" "Could not find track(s) '%s'", tr)
+                                  res))))
+        removeDuplic (fn [cumm tracks]
+                       (if (seq tracks)
+                         (let [track (first tracks)
+                               cumm (if (some #(= track %) cumm) cumm (conj cumm track))]
+                           (recur cumm (rest tracks)))
+                         cumm))
+        ]
     (->> trackList
-	 (map expandTrackOrFile)
-	 (reduce removeDuplic []))))
+      (map expandTrackOrFile)
+      (reduce removeDuplic []))))
 
 
 
@@ -343,15 +345,16 @@
   ([trackNI depth]
      {:pre [trackNI (or (= (type trackNI) java.lang.String) (map? trackNI))]}
      ;; look up the id of the latest version
-     (if-let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
-       (let [trackName (:track_name trackInfo)]
-         (if-let [res (ps_getCommit (:track_id trackInfo) depth)]
-           (let [json  (:contents res)
-                 obj   (json/read-json json)]
-             (assoc trackInfo :obj obj  :json json  :datetime (:datetime res)))
-           (addMessage trackName "ERROR: Could not retrieve track at depth %s." depth)))
-       (addMessage (str trackNI) "ERROR: could not retrieve track-info."))))
-
+     (let [lpf  "(getCommit): "]
+       (if-let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
+         (let [trackName (:track_name trackInfo)]
+           (if-let [res (ps_getCommit (:track_id trackInfo) depth)]
+             (let [json  (:contents res)
+                   obj   (json/read-json json)]
+               (assoc trackInfo :obj obj  :json json  :datetime (:datetime res)))
+             (addMessage trackName "ERROR: Could not retrieve track at depth %s." depth)))
+         (addMessage (str trackNI) "ERROR: could not retrieve track-info.")))))
+  
 
 
 
@@ -367,10 +370,10 @@
     (try
       (json/read-json reader)
       (catch Exception e
-        true
-        (do
+;;        true
+;;        (do
           (error lpf "message: " (.getMessage e))
-          nil))))) 
+          nil))))
 
 
 (defn readJsonFS
@@ -389,6 +392,7 @@
             (nJson rdr)))
         (nJson f))
       (catch Exception e
+        ;; can drown exception, as it is caught by the caller (based on the nil-value)
         (error lpf "exception: " e
                "\n\tCAUGHT EXCEPTION with message: " (.getMessage e))
         nil))))
@@ -440,7 +444,8 @@
 (defn getPatchesFS
   "Get all patches for a track by comparing the version in the file-system to the latest commit."
   [trackInfo]
-  (let [track (:track_name trackInfo)]
+  (let [lpf "(getPatchesFS): "
+        track (:track_name trackInfo)]
     (if-let [file (extendFSPath (:file_location trackInfo))]
       (if-let [dbObj   (:obj (getCommit trackInfo))]
         (if-let [jfs    (readJsonFS file)]
@@ -458,12 +463,13 @@
 (defn trackDirty?
   "Check whether the track 'trackNI' is dirty. 'trackNI' is a trackInfo record or a track_name."
   [trackNI]
+  (let [lpf "(trackDirty?): "]
      (if-let [trackInfo  (if (map? trackNI) trackNI (ps_getTrackInfo trackNI))]
        (let [org (:obj (getCommit trackInfo))
              mod (:obj (readJsonFS (:file_location trackInfo)))
              change (jsonChanged? org mod)]
          (first change))  ;; take first to map empty list to nil
-       (addMessage trackNI "Could not locate track (information)")))
+       (addMessage trackNI "Could not locate track (information)"))))
 
 
 
@@ -525,7 +531,8 @@
        (a) a track in the database containing the last commit of srcTrack 
        (b) the .cdfde, .wcdf and .cda files at the given location."
   [[srcTrack & dstPaths]]
-  (let [srcTrack (getTrackName srcTrack)
+  (let [lpf "(cleanCopyTracks): "
+        srcTrack (getTrackName srcTrack)
         srcInfo  (ps_getTrackInfo srcTrack)
         ;;srcTrack (:track_name srcInfo)
         ]
@@ -577,40 +584,42 @@
 (defn checkout-copy-last
   "Checkout a copy of the dashboard with suffix _last. Does not create a new track. Use clean-copy if you want that."
   [srcTracks]
-  (if (= (count srcTracks) 1)
-    (let [srcTrack (getTrackName (first srcTracks))
-          srcInfo  (ps_getTrackInfo srcTrack)
-          ;;srcTrack (:track_name srcInfo)
-          ]
-      (if-let [srcFile (getTrackFilePath srcInfo)]
-        (if-let [srcObj  (:obj (getCommit srcTrack))]
-          (let [newName    (str srcTrack "_last" cdfdePostfix)  
-                contents   (getJsonRepr srcObj)
-                dt         (getCurrDateTime)]
+  (let [lpf "(checkout-copy-last): "]
+    (if (= (count srcTracks) 1)
+      (let [srcTrack (getTrackName (first srcTracks))
+            srcInfo  (ps_getTrackInfo srcTrack)
+            ;;srcTrack (:track_name srcInfo)
+            ]
+        (if-let [srcFile (getTrackFilePath srcInfo)]
+          (if-let [srcObj  (:obj (getCommit srcTrack))]
+            (let [newName    (str srcTrack "_last" cdfdePostfix)  
+                  contents   (getJsonRepr srcObj)
+                  dt         (getCurrDateTime)]
             (writeVersionFS srcInfo contents srcObj newName)
             (writeActionEntry srcTrack dt
                               (format (str "Checked out a copy of '%s'"
                                            "to new name '%s'.")
                                       srcTrack newName)))
-          (addMessage srcTrack "Failed to read last commit from the database."))
-        (addMessage srcTrack "The file-path could not be found")))
-    (addMessage (first srcTracks) (str "In (checkout-copy-last) Expected exactly one srcTrack, "
-                                       "received " (count srcTracks) " tracks"))))
-
+            (addMessage srcTrack "Failed to read last commit from the database."))
+          (addMessage srcTrack "The file-path could not be found")))
+      (addMessage (first srcTracks) (str "In (checkout-copy-last) Expected exactly one srcTrack, "
+                                         "received " (count srcTracks) " tracks")))))
+  
 
 (defn- commitPatchSet
   "Store 'currJson' and the 'patches' to the database and return the timestamp (on success)." 
   [trackName trackId jsonStr patches]
   {:pre [trackId]}
-  (if (not (seq patches))
-    (addMessage trackName "Warning: There are no changes for this commit (commit-patches cancelled).")
-    (let [lpf "(commitPatchSet): "
-          dt   (getCurrDateTime)]
-      (debug lpf  "obtained patches " patches)
-      (ps_writeCommit trackId jsonStr dt)
-      (ps_writePatches trackId patches dt)
-      (debug lpf  "Added a new version for " trackName " at date-time: " dt)
-      dt)))
+  (let [lpf "(commitPatchSet): "]
+    (if (not (seq patches))
+      (addMessage trackName "Warning: There are no changes for this commit (commit-patches cancelled).")
+      (let [lpf "(commitPatchSet): "
+            dt   (getCurrDateTime)]
+        (debug lpf  "obtained patches " patches)
+        (ps_writeCommit trackId jsonStr dt)
+        (ps_writePatches trackId patches dt)
+        (debug lpf  "Added a new version for " trackName " at date-time: " dt)
+        dt))))
 
 
 
@@ -633,7 +642,8 @@
   "For all 'args' commit a new version of the json (dashboard) to one of the existing tracks."
   [args]
   (doseq [trackName args]
-    (let [trackInfo (ps_getTrackInfo (getTrackName trackName))
+    (let [lpf "(commitVersion): "
+          trackInfo (ps_getTrackInfo (getTrackName trackName))
           nme (:track_name trackInfo)]
       (if-let [dt (commitTrackPatches trackInfo)]
         (writeActionEntry nme dt
@@ -711,7 +721,8 @@
 (defn applyPatchesSrcDst
   "Apply the patches from 'depth' commits back in time until current commit of 'srcTrack' to 'dstTrack'." 
   [srcTrack dstTrack depth]
-  (let [srcTrack (getTrackName srcTrack)
+  (let [lpf "(applyPatchesSrcDst): "
+        srcTrack (getTrackName srcTrack)
         dstTrack (getTrackName dstTrack)
         srcInfo  (ps_getTrackInfo srcTrack)
         dstInfo  (ps_getTrackInfo dstTrack)
@@ -743,7 +754,8 @@
   "Revert to the last commit (database-version) and write this to the file-system."
   [args]
   (doseq [trackName args]
-    (let [track (getTrackName trackName)
+    (let [lpf "(revertToCommit): "
+          track (getTrackName trackName)
           dt (getCurrDateTime)]
       (if (confirmReader (format "Overwite the files in the filesystem for track '%s'?" track))
         (if-let [{:keys [json obj]} (getCommit track)]
@@ -769,7 +781,8 @@
   "Drop the last commit from the database. Will remove the patches that belong to this commit too. The files in the file-system will nog be touched."
   [args]
   (doseq [trackName args]
-    (let [track (getTrackName trackName)
+    (let [lpf "(dropLastCommit): "
+          track (getTrackName trackName)
           cdt (getCurrDateTime)]
       (if (confirmReader (format "Drop last commit of '%s'?" track))
         (if-let [trackInfo (ps_getTrackInfo track)]
@@ -963,10 +976,57 @@ Assume that the sql-connection is already established."
                    (try
                      (oper args)
                      (catch SQLException e
-                       (printSQLExcept (str "Processing command " comm) e)
-                       "Exception caught")))
-                 (println (format "ERROR: unknown command %s" comm)))
-               (println (:error args)))))))
+                       (vExcept/report-rethrow (str lpf " command " comm) e))))
+                 (vExcept/throw-except lpf " unknown command " comm))
+               (vExcept/throw-except lpf " args should be map. Received type: " (type args)))))))
+
+;; OLD STYLE that catches and prints all errors.
+;; (replace by top-level error-handler and use the new processCommand
+;(defn processCommand-with-catch 
+; "Process a command list consisting of a sequence of tokens (words).
+;Assume that the sql-connection is already established."
+;  [statement]
+;  (let [lpf "(processCommand): " 
+;        comm (:command statement)
+;        comm (if (string? comm) 
+;               (str/lower-case comm)
+;               (error lpf "Command should be string. Current type is: " (type comm) "  and value " comm))
+;        expand? (not (contains? dontExpandComm comm))]
+;    (letfn [(get-track-item [theKey]
+;                            (let [{args theKey} statement]
+;                              (if expand? (getExpandedTrackList args) args)))
+;            (process-srcDst []
+;                            (let [src (get-track-item :src)
+;                                  dst (get-track-item :dst)
+;                                  maxSrc (commandMaxSrcMap comm 100)
+;                                  cntSrc (count src)]
+;                              (if (> cntSrc maxSrc)
+;                                {:error (format "Command %s accepts at most %s sources.\nReceived: %s"
+;                                                comm maxSrc src)}
+;                                (concat src dst))))
+;            (process-args []
+;                          (let [args (if (:src statement)
+;                                       (process-srcDst)
+;                                       (get-track-item :args))]
+;                            args))]
+;           ;; either :src and :dst   OR   :args OR neither,  but not both
+;           (assert (or (and (nil? (:src statement)) (nil? (:dst statement)))
+;                       (nil? (:args statement))))
+;           (let [args (process-args)
+;                 oper (commandFuncMap comm)]
+;             (if (not (map? args)) 
+;               (if oper
+;                 (do
+;                   (debug lpf  "Executing command: " comm )
+;                   (when (seq args)
+;                     (debug lpf  "   with arguments: " args)) 
+;                   (try
+;                     (oper args)
+;                     (catch SQLException e
+;                       (printSQLExcept (str "Processing command " comm) e)
+;                       "Exception caught")))
+;                 (println (format "ERROR: unknown command %s" comm)))
+;               (println (:error args)))))))
 
 (defn procCL "Process the command assumed first arg is source and rest is destination"
   [statement]

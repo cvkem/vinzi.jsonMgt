@@ -157,12 +157,15 @@
                                                             :src  (list command)
                                                             :dst  '()})))]
            (glb/set-override-username (:user params))
-           (let [response (if @helpModus 
-                               (procHelp) 
-                               (ps/ps_callWithConnection procComm))]
-           (glb/set-override-username (:user params))
-             (info "Received result: " response)
-             response))))
+           (try
+             (let [response (if @helpModus 
+                              (procHelp) 
+                              (ps/ps_callWithConnection procComm))]
+               (debug "Received result: " response)
+               response)  ;; result on success
+             (finally   ;; ensure that override-username is reset 
+               ;; error-propagation is let to the cdp plugin
+                        (glb/set-override-username nil))))))
   
 
 

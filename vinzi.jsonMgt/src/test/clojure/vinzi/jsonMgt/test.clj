@@ -171,10 +171,20 @@
     (println "testProcess: " command "(will be executed later)" )
     `(is (processCommandStr ~command) ~command)))
 
+;  OLD style when exceptions did not surface!!
+;(defmacro testNotProcess [& args]
+;  (let [command (apply format (map eval args))]
+;    (println "testProcess: " command "(will be executed later)" )
+;    `(is (not (processCommandStr ~command)) ~command)))
+
 (defmacro testNotProcess [& args]
   (let [command (apply format (map eval args))]
     (println "testProcess: " command "(will be executed later)" )
-    `(is (not (processCommandStr ~command)) ~command)))
+    `(processCommandStr ~command)))
+;;   next line fails as 
+;; CompilerException java.lang.RuntimeException: No such var: vinzi.jsonMgt.test/thrown?, compiling:(vinzi/jsonMgt/test.clj:211)
+;;    `(is (thrown? (processCommandStr ~command)) ~command)))
+;; so taking test outside macro
 
 (deftest testDatabase   ;; testing the database-tool
 
@@ -199,8 +209,10 @@
   (is (testDbTableExists (dbps/getPatchDb)) "is patchDb generated")
 
   ;; ;; should fail (as orgFile exists)
-  (testNotProcess "create %s" orgFile)
-
+  ;;(testNotProcess "create %s" orgFile))
+  (is (thrown? Exception 
+               (testNotProcess "create %s" orgFile)))
+  
   (is (sameTail (getTrackFilePath (getTrackName "orgFile.json")) "/test-data/orgFile.json")
        "TrackFilePath should have the correct tail (head differs per system)")
 
@@ -211,8 +223,10 @@
   ;; ;;; testing the committing
   ;; ;;  file is not changed yet
   ;; ;;
-  (testNotProcess "commit %s" orgFile)
-  (testNotProcess "commit %s" target1File)
+  (is (thrown? Exception 
+               (testNotProcess "commit %s" orgFile)))
+  (is (thrown? Exception 
+               (testNotProcess "commit %s" target1File)))
   (is (testTableSize (dbps/getCommitDb) = 1) "Expected one record in track-db")
   (is (testTableSize (dbps/getPatchDb) = 0) "Expected zero records in patch-db")
 
@@ -248,6 +262,7 @@
   ;; create a second track
   (testProcess "create %s " target2File)
   ;; should fail as an insert-patch can not do a replace
-  (testNotProcess "apply %s %s " orgFile target2File)
+  (is (thrown? Exception 
+               (testNotProcess "apply %s %s " orgFile target2File)))
   
   )

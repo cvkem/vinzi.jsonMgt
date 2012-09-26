@@ -5,7 +5,8 @@
   (:use [vinzi.jsonMgt persistentstore]
         [vinzi.jsonMgt.hib.clj errorEntry actionEntry])
   (:require [vinzi.tools
-             [vSql :as vSql]])
+;;             [vSql :as vSql]
+             [vExcept :as vExcept]])
   (:import [java.util Date]
 	   [java.sql SQLException Timestamp])
   )
@@ -96,20 +97,8 @@
   "Print report for an SQL exception
    (including one step higher in the exception-chain."
   [location e]
-  (vSql/printSQLExcept location e))
+  (vExcept/report location e))
 
-;(defn printSQLExcept
-;  "Print report for an SQL exception
-;   (including one step higher in the exception-chain."
-;  [location e]
-;  (println "Exception caught at location " location)
-;  (println "Message: " (.getMessage e))
-;  (println "ErrorCode: " (.getErrorCode e))
-;  (println "SQLState:  " (.getSQLState e))
-;  (when-let [n (.getNextException e)]
-;    (println "Next-message: " (.getMessage n))
-;    (println "Next-errorcode: " (.getErrorCode n)))
-;  (flush))
 
 
 
@@ -119,16 +108,29 @@
   (let [errEntry (create-errorEntry dt track currCommand msg (getUserName))]
     (ps_writeErrorEntry errEntry)))
 
-(defn addMessage
+;; OLD version, which did not use the exception handling mechanism
+;
+;(defn addMessage
+;  "Increase the number of errors 'nrErrors' Add the message to the error database."
+;  [track & msgs]
+;  (let [lpf "(addMessage): "
+;        msg (apply format msgs)
+;        dt (getCurrDateTime)]
+;    (warn lpf "Track:'" track "' --> " msg)
+;    (signalError)
+;    (addErrEntry msg dt track))
+;  nil)
+
+(defmacro addMessage
   "Increase the number of errors 'nrErrors' Add the message to the error database."
   [track & msgs]
-  (let [lpf "(addMessage): "
-        msg (apply format msgs)
-        dt (getCurrDateTime)]
-    (warn lpf "Track:'" track "' --> " msg)
-    (signalError)
-    (addErrEntry msg dt track))
-  nil)
+  `(let [msg# (format ~@msgs)
+         ex#  (Exception. (str ~'lpf "Track:'" ~track "' --> " msg#))]
+    ;; report the error to ensure is is not overwritten during the addEntry, but
+    ;; raise it after addErrEntry is finished.
+    (vExcept/report msg# ex#)
+    (addErrEntry msg# (getCurrDateTime) ~track)
+    (throw ex#)))  ;; now raise the already reported exception.
 
 
 (defn writeActionEntry

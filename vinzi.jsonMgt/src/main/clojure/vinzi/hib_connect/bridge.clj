@@ -2,7 +2,8 @@
   (:use	 [clojure pprint]
          [clojure.tools logging])
   (:use vinzi.hib-connect.globals)
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [vinzi.tools.vExcept :as vExcept])
   (:import org.hibernate.SessionFactory)
   (:import org.hibernate.cfg.Configuration))
 
@@ -144,7 +145,7 @@
                (debug lpf "csf = " csf)
                (.buildSessionFactory csf))
              (catch Throwable except
-               (error lpf "Exception: " (.getMessage except)))))))
+               (vExcept/report lpf except))))))
 
 
 (defn xml-createSessionFactory "Create a sessionFactory based on the hibernate.settings.xml files at the class-path." []
@@ -153,7 +154,7 @@
     (try
       (.. (Configuration.) (configure) (buildSessionFactory))
       (catch Throwable except
-        (error lpf  (.getMessage except))))))
+        (vExcept/report lpf except)))))
   
 (defn createSessionFactory "Create a sessionFactory. Use 'dbParams' if available, otherwise look for an xml file." []
   (if dbParams
