@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDADescriptor>
+   <DataSources>
+      <Connection id="demoData" type="sql.jndi">
+         <Jndi>Tdat</Jndi>
+      </Connection>
+   </DataSources>
+   <DataAccess access="public" cache="true" cacheDuration="3600" connection="demoData"
+               id="demoData"
+               type="sql">
+      <Columns/>
+      <Parameters/>
+      <Query>select label, number
+FROM test.demo;</Query>
+   </DataAccess>
+</CDADescriptor>

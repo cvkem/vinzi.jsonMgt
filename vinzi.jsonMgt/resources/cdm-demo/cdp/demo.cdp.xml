@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cdp>
+
+ <clojure namespace="vinzi.cdp.ns.demo">
+ (use 'vinzi.tools.vSql)
+ (use 'clojure.tools.logging)
+
+
+ </clojure>
+
+
+
+
+  <action
+     accessId="square-data"
+     description="."
+     >
+   <sql datasource ="Tdat" operation="no-output">
+      UPDATE ${schema}.${table} SET number=number*number;
+   </sql>
+
+   <params>
+   	 <param id="schema" default="test"/>
+   	 <param id="table"/>
+   </params>
+ </action>
+
+
+  <action
+     accessId="squareroot-data"
+     description="."
+     >
+   <sql datasource ="Tdat" operation="no-output">
+      UPDATE ${schema}.${table} SET number=SQRT(number);
+   </sql>
+
+   <params>
+         <param id="schema" default="test"/>
+         <param id="table"/>
+   </params>
+ </action>
+
+
+  <action
+     accessId="calculate-sum"
+     description="Calculate a sum over 'number' column."
+     >
+
+   <sql datasource ="Tdat" >
+   SELECT * FROM ${schema}.${table}; 
+   </sql>
+
+   <clojure datasource ="Tdat" >
+      (fn [params data]
+         (let [sum (reduce + (map :number data))]
+            (list {:sum sum})))
+   </clojure>   
+
+   <params>
+   	 <param id="schema" default="test"/>
+   	 <param id="table"/>
+   </params>
+ </action>
+
+
+</cdp>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDADescriptor>
+  <DataSources>
+    <Connection id="demoData" type="sql.jndi">
+      <Jndi>Tdat</Jndi>
+    </Connection>
+  </DataSources>
+  <DataAcces>
+    <Parameters/>
+  </DataAcces>
+  <DataAcces cacheDuration="3600" cache="false" access="public" id="demoData">
+    <Columns/>
+    <Columns/>
+    <Query>select label, number
+FROM test.demo
+ORDER BY label;</Query>
+    <Parameters/>
+  </DataAcces>
+</CDADescriptor>
