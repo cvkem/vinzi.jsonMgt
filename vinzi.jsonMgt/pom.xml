@@ -3,6 +3,7 @@
   <groupId>vinzi</groupId>
   <artifactId>vinzi.jsonMgt</artifactId>
   <version>0.2.0-SNAPSHOT</version>
+  <name>jsonMgt</name>
   <description>vinzi jsonMgt v 2.0 provides version control for json-files and allowes for synchronized management of a series of json-files (patched applied to one file can be extracted and applied to a series of other files.)</description>
 	<repositories>
 		<repository>
@@ -150,27 +151,20 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-core</artifactId>
-			<version>3.5.4-Final</version>
+			<groupId>vinzi</groupId>
+			<artifactId>vinzi.cdp</artifactId>
+			<version>0.0.2-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>javassist</groupId>
-			<artifactId>javassist</artifactId>
-			<version>3.12.1.GA</version>
-			<scope>provided</scope>
+			<groupId>vinzi</groupId>
+			<artifactId>vinzi.hib-connect</artifactId>
+			<version>0.0.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>clojure.prxml</groupId>
 			<artifactId>clojure.prxml</artifactId>
 			<version>0.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>vinzi</groupId>
-			<artifactId>vinzi.cdp</artifactId>
-			<version>0.0.2-SNAPSHOT</version>
-			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 	<build>
@@ -277,5 +271,4 @@
 		</pluginManagement>
 	</build>
   
-	<name>jsonMgt</name>
 </project>

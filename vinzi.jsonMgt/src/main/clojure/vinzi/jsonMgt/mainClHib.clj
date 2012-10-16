@@ -1,6 +1,6 @@
 (ns vinzi.jsonMgt.mainClHib
   (:require [vinzi.jsonMgt
-	     [hibernate :as hibps]
+;;	     [hibernate :as hibps]
 	     [core :as jmgt]
 	     [globals :as glb]
 	     [commandline :as cl]
@@ -18,13 +18,13 @@
 
 (defn procClHib []
   (letfn [(initClHib []
-	    (glb/setDefPostfix glb/cdfdePostfix)
-	    (glb/installConfirmReader cl/confirmReaderCL)
-	    ;; read-config-file AND install the database interface
-	    (jmgt/readJsonMgtConfig))
-	  (shutdownClHib []
-			 (ps/ps_closeDatabase))]
-  (initClHib)
+                     (glb/setDefPostfix glb/cdfdePostfix)
+                     (glb/installConfirmReader cl/confirmReaderCL)
+                     ;; read-config-file AND install the database interface
+                     (jmgt/readJsonMgtConfig))
+          (shutdownClHib []
+                         (ps/ps_closeDatabase))]
+         (initClHib)
   (cl/processCommandStdin)
   (shutdownClHib)))
 

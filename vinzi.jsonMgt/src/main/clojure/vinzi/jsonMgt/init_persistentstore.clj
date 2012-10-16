@@ -2,7 +2,7 @@
   (:use	   [clojure pprint]
            [clojure.tools logging])
   (:require [vinzi.jsonMgt
-             [hibernate :as hibps]
+ ;;            [hibernate :as hibps]  ;; now loaded dynamically, only when needed
              [database :as dbps]
              [globals :as glb]
              [persistentstore :as ps]]
@@ -23,8 +23,12 @@
         ;; name-space at the top it will start its initialization
         ;;	(use '(vinzi.jsonMgt hibernate))
         ;;	(installDatabaseAsPS))
+        ;; add require underneath in order to be able to put the full hibernate
+        ;; in a separate jar that is not required.
+        (require '(vinzi.jsonMgt [hibernate :as hibps]))
         (debug  lpf "Installing the hibernate interface")
-        (hibps/installDatabaseAsPS))
+        (let [installHibernate (ns-resolve 'vinzi.jsonMgt.hibernate 'installDatabaseAsPS)]
+          (installHibernate)))
       (if (= dbInt "sql")
         (do
           ;	  (use '(vinzi.jsonMgt database))
