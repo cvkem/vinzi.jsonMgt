@@ -167,7 +167,8 @@ function run_action (action) {
 	
 function run_action_src (action) {
 	var msg = ( arguments[1] ) ? arguments[1] : "";
-	run_action_full (action, srcBox.getValue(), "", msg);
+        var src = srcBox.getValue();
+	run_action_full (action, src, "", msg);
    return;
 };
 
@@ -217,15 +218,26 @@ $(function () {
                                var msg = $(dialogPrefix+'#msg').val();
 
                                run_action_src('commit', msg);
+   alert('returned from tun_action_sr. Now close commitDialog');
                              
-                               $(this).dialog('close');
+                               //$(this).dialog('close');
+			       // previous function replaced to allow for
+ 				// external submithandler to call this function.
+			       $(dialogPrefix).dialog('close');
                              return;
                            } catch (err) {
                                showError('Error during "Commit":', err);
                            }
                          }
                      }
- 		});  // END of commitDialog
+ 		}).submit(function () {
+              alert('Now calling the original commit. Return false afterwards.')
+              $('#commitDialog ').dialog('option', 'buttons').Commit()
+ 	      return false;   // prevent default behavior.
+           });  // END of commitDialog
+
+
+
 
 	// Get the commit-message and add a commit
 	$("#duplicTrackDialog").dialog({autoOpen: false,
@@ -263,8 +275,7 @@ $(function () {
                            }
                          }
                      }
- 		});  // END of commitDialog
-
+ 		});  // END of duplicTrack dialog
 	
 	
 	

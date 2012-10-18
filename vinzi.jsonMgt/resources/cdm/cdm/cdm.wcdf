@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<cdf>
-        <title>Community Dashboard Manager</title>
-        <author/>
-        <description>Tool for version control and synchronous mgt of Pentaho dashboards</description>
-        <icon/>
-		<style>Clean</style>
-</cdf>
