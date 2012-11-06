@@ -50,7 +50,7 @@
   "Returns a map with the current date and time."
   []
   (let [jd (Date.)
-	ts (Timestamp.  (.getTime jd))]
+        ts (Timestamp.  (.getTime jd))]
     ts))
 
 

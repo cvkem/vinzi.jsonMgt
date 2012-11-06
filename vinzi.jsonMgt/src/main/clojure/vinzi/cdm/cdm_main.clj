@@ -12,7 +12,8 @@
              [init-persistentstore :as ips]]
             [vinzi.cdm
              [globals :as cgl]
-             [jqueryFileTree :as jqft]]))
+             [jqueryFileTree :as jqft]])
+  (:import [java.sql.Date java.sql.TimeStamp]))
 
 
   (def initialized? (atom false))
@@ -153,22 +154,22 @@
                                     (swap! helpModus (fn [_] true))
                                     (str "Click a command button to view help.\n"
                                          "Click help again for an overview of the available commands)"))
-              (procComm []
-                        (info "process command " command)
-                        (if (= command "help")
-                          (switch-to-help-modus)
-                          (let [response (with-out-str
-                                             (jmgt/processCommand commandRec))
-                                response (if (or (nil? response)
-                                                 (= response "")
-                                                 (not (jmgt/returnTextOutput command)))
-                                           (str "Succesfull performed command "
-                                                commandRec)
-                                             response)]
-                            (doall response))))
-              (procHelp []
-                        (swap! helpModus (fn [_] false))  ;; turn it off again
-                        (with-out-str (jmgt/processCommand {:command "help"
+            (procComm []
+                      (info "process command " command)
+                      (if (= command "help")
+                        (switch-to-help-modus)
+                        (let [response (with-out-str
+                                         (jmgt/processCommand commandRec))
+                              response (if (or (nil? response)
+                                               (= response "")
+                                               (not (jmgt/returnTextOutput command)))
+                                         (str "Succesfull performed command "
+                                              commandRec)
+                                         response)]
+                          (doall response))))
+            (procHelp []
+                      (swap! helpModus (fn [_] false))  ;; turn it off again
+                      (with-out-str (jmgt/processCommand {:command "help"
                                                             :src  (list command)
                                                             :dst  '()})))]
            (glb/set-override-username (:user params))
