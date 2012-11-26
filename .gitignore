@@ -1,10 +1,9 @@
 #pom.xml
 *jar
 *.war
-old/
-vinzi.jsonMgt/target/
 /lib/
 /classes/
+/target/
 .lein-failures
 .lein-deps-sum
 *~
@@ -16,7 +15,8 @@ vinzi.jsonMgt/target/
 *.bak
 *.sql
 *.swp
-*.swo
 *.tmp
+*.swo
 *.pyc
 vinzi.jsonMgt/test-data/*.json
+ccw.repl.cmdhistory.prefs
