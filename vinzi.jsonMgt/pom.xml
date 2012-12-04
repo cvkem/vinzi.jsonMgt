@@ -14,6 +14,14 @@
 			<id>Clojars</id>
 			<url>http://clojars.org/repo</url>
 		</repository>
+		<repository>
+			<id>Pentaho</id>
+			<url>http://repository.pentaho.org/artifactory/pentaho</url>
+		</repository>
+		<repository>
+			<id>Pentaho-ext</id>
+			<url>http://repository.pentaho.org/artifactory/repo</url>
+		</repository>
 	</repositories>
 	<dependencies>
 <!--
@@ -109,27 +117,27 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>pentaho-bi-platform-api</groupId>
+			<groupId>pentaho</groupId>
 			<artifactId>pentaho-bi-platform-api</artifactId>
-			<version>3.9.0</version>
+			<version>3.9.0-stable</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>pentaho-bi-platform-engine-core</groupId>
+			<groupId>pentaho</groupId>
 			<artifactId>pentaho-bi-platform-engine-core</artifactId>
-			<version>3.9.0</version>
+			<version>3.9.0-stable</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>pentaho-bi-platform-engine-services</groupId>
+			<groupId>pentaho</groupId>
 			<artifactId>pentaho-bi-platform-engine-services</artifactId>
-			<version>3.9.0</version>
+			<version>3.9.0-stable</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>pentaho-bi-platform-util</groupId>
+			<groupId>pentaho</groupId>
 			<artifactId>pentaho-bi-platform-util</artifactId>
-			<version>3.9.0</version>
+			<version>3.9.0-stable</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

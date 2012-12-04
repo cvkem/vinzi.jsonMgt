@@ -3,7 +3,7 @@
 *.war
 /lib/
 /classes/
-/target/
+vinzi.jsonMgt/target/
 .lein-failures
 .lein-deps-sum
 *~
