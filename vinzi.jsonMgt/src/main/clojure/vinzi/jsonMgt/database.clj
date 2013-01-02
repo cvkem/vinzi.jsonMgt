@@ -4,6 +4,7 @@
          [vinzi.jsonMgt globals]
          [vinzi.json.jsonGlobals :only [getPathList keywordize getPathStrPatch isJson?]])
   (:require  [vinzi.jsonMgt [persistentstore :as ps]]
+             [vinzi.tools [vExcept :as vExcept]]
              [clojure.string :as str]
              [clojure.java
               [jdbc :as sql]]
@@ -111,7 +112,7 @@
                            (let [res (apply f args)]
                              ;;	    (println "Call within call-with-database returned: " res)
                              res)
-                           (error lpf "Initialization of Scheme aborted")))))
+                           (vExcept/throw-except lpf "Initialization of Scheme aborted")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

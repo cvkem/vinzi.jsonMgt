@@ -1,7 +1,8 @@
 (ns vinzi.jsonMgt.init-persistentstore
   (:use	   [clojure pprint]
            [clojure.tools logging])
-  (:require [vinzi.jsonMgt
+  (:require [vinzi.tools [vExcept :as vExcept]]
+            [vinzi.jsonMgt
  ;;            [hibernate :as hibps]  ;; now loaded dynamically, only when needed
              [database :as dbps]
              [globals :as glb]
@@ -45,5 +46,5 @@
       (do 
         (debug lpf "Now calling initDatabase.")
         (ps/ps_initDatabase cfg))
-      (error lpf "No bindings for the persistent store yet."))))
+      (vExcept/throw-except lpf "No bindings for the persistent store yet."))))
 

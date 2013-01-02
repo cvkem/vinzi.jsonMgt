@@ -3,6 +3,7 @@
         clojure.pprint)
   (:require [clojure.string :as str]
             [clojure.java.jdbc :as sql]
+            [vinzi.tools [vExcept :as vExcept]]
             [vinzi.pentaho 
              [connect :as pConn]]
             [vinzi.jsonMgt
@@ -24,35 +25,37 @@
 
   (defn initialize
     "Initialize the system, read config-file and install interfaces."
-    []
-    (let [lpf "(initialize): "
-          lookup-jndi (fn [dbCfg]
-                        ;; if db is a string, then this string is used to lookup a jndi-connnection
-                        ;;  in the pentaho-hibernate database.
-                        (let [db (:db dbCfg)]
-                          (if (string? db)
-                            (if-let [dbParams (pConn/find-connection db)]
-                              (do
-                                (debug lpf "jndi " db " translates to connection-parameters: "
-                                       (with-out-str (pprint (assoc dbParams :password "..."))))
-                                (assoc dbCfg :db dbParams))
-                              (error lpf "Could not find jndi/connection for name: " db))
-                            dbCfg)))]   ;; return unmodified
-      (when (not @initialized?)
-        (info "Initialize the CDM.")
-        (swap! initialized? (fn [_] true))
-        (info jmgt/introMessage)
-        (glb/setDefPostfix cdfdePostfix)
-
-        ;; let the doc-root match pentaho-Connect (derives it from classpath)
-        (jmgt/set-doc-root (pConn/get-solution-folder))
-        
-        ;; select the persistent-storage backend (and initialize the databases when needed)
-        (if-let [databaseCfg @(ns-resolve 'vinzi.cdp.ns.cdm 'databaseCfg)] 
-          (ips/init-persistentstore (lookup-jndi databaseCfg))
-          (error lpf "Could not resolve vinzi.cdp.ns.cdm/databaseCfg"))
-        (info "Initialization of the CDM finished." ))))
-
+    ([] (initialize false))
+    ([forceInit]
+      (let [lpf "(initialize): "
+            lookup-jndi (fn [dbCfg]
+                          ;; if db is a string, then this string is used to lookup a jndi-connnection
+                          ;;  in the pentaho-hibernate database.
+                          (let [db (:db dbCfg)]
+                            (if (string? db)
+                              (if-let [dbParams (pConn/find-connection db)]
+                                (do
+                                  (debug lpf "jndi " db " translates to connection-parameters: "
+                                         (with-out-str (pprint (assoc dbParams :password "..."))))
+                                  (assoc dbCfg :db dbParams))
+                                (vExcept/throw-except lpf "Could not find jndi/connection for name: " db))
+                              dbCfg)))]   ;; return unmodified
+        (when (or (not @initialized?) forceInit)
+          (info "Initialize the CDM.")
+          (info jmgt/introMessage)
+          (glb/setDefPostfix cdfdePostfix)
+          
+          ;; let the doc-root match pentaho-Connect (derives it from classpath)
+          (jmgt/set-doc-root (pConn/get-solution-folder))
+          
+          ;; select the persistent-storage backend (and initialize the databases when needed)
+          (if-let [databaseCfg @(ns-resolve 'vinzi.cdp.ns.cdm 'databaseCfg)]
+            (ips/init-persistentstore (lookup-jndi databaseCfg)) ;; lookup-jndi throws exception on failure
+            (vExcept/throw-except lpf "Could not resolve vinzi.cdp.ns.cdm/databaseCfg"))
+          ;; if this point is reached without exceptions than assume the initialization has succeeded.
+          (swap! initialized? (fn [_] true))          
+          (info "Initialization of the CDM finished." )))))
+    
 
  
   (defn get-doc-root 
