@@ -2,7 +2,7 @@
   (:use [vinzi.json jsonDiff [jsonZip :only [jsonZipper]]])
   (:use [vinzi.jsonMgt globals core persistentstore commandline])
   (:require [vinzi.jsonMgt [database :as dbps]])
-  (:import [vinzi.json.jsonDiff Patch]
+  (:import [vinzi.json.jsonGlobals Patch]
 	   [java.sql SQLException]
 	   [java.io File])
   (:use [clojure test pprint])

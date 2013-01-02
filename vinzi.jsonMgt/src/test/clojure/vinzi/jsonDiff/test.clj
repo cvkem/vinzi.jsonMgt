@@ -1,11 +1,11 @@
 (ns vinzi.jsonDiff.test
   (:use [vinzi.json.jsonDiff] :reload)
-  (:import [vinzi.json.jsonDiff Patch])
-  (:use [vinzi.json.jsonZip :only [jsonZipper jsonRoot jsonKey]])
-  (:use [clojure.test])
-  (:use [clojure.walk])
-  (:use [clojure.pprint])
+  (:use [vinzi.json.jsonZip :only [jsonZipper jsonRoot jsonKey]]
+        [clojure.test]
+        [clojure.walk]
+        [clojure.pprint])
   (:require  [clojure  [zip :as zip]])
+  (:import [vinzi.json.jsonGlobals Patch])
   )
 
 (defn- strDist [x y]

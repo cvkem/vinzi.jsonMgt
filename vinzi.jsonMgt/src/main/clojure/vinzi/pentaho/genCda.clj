@@ -1,14 +1,13 @@
 (ns vinzi.pentaho.genCda
   (:use	   [clojure pprint]
-           [clojure.tools logging])
+           [clojure.tools logging]
+           [vinzi.json.jsonZip :only [jsonTypeMap zipLoc isBoxed? isZipper?]])
   (:require  [clojure
-	      [zip :as zip]])
-  (:require  [clojure
-	      [prxml :as xml]
-	      [string :as str]]
-	     [clojure.data [json :as json]])
-  (:use [vinzi.json.jsonZip :only [jsonTypeMap zipLoc isBoxed? isZipper?]])
-  )
+              [zip :as zip]]
+             [clojure
+              [string :as str]]
+             [clojure.data.xml :as dXml]
+             [clojure.data [json :as json]]))
 
 (def testFase true)
 
@@ -314,11 +313,35 @@
     (applyToChildCumm (zip/down z) cumm oper mergeCumm)))
 
 
-(defn generateXML [res]
-  (let [CDAdescr (into (vector :CDADescriptor (:head res)) (:sources res))]
-    (with-out-str (binding [xml/*prxml-indent* 2]
-      (xml/prxml  [:decl!] CDAdescr)))))
+;(defn generateXML [res]
+;  (let [CDAdescr (into (vector :CDADescriptor (:head res)) (:sources res))]
+;    (with-out-str (binding [dXml/*prxml-indent* 2]
+;      (dXml/prxml  [:decl!] CDAdescr)))))
 
+(defn generateXML [res]
+  (let [trans-prxml-vect (fn trans-prxml-vect [pxv]
+                           ;; transforms a prxml-like vector structure as a 
+                           ;; datastructure that can be used by clojure.data.xml
+                           ;; (does not process special constructs as :decl! and :cdecl!
+                           (if (not (sequential? pxv))
+                             (list pxv)  ;; return element wrapped as a list
+                               (let [head (first pxv)]
+                                 (if (vector? head)
+                                   (vec (map trans-prxml-vect pxv))
+                                   (if (= (count pxv) 1)
+                                     pxv   ;; return element as is (does this options appear?
+                                     (let [tag head
+                                           [attrs content] (let [attrs (second pxv)]
+                                                                 (if (map? attrs)
+                                                                   [attrs  (drop 2 pxv)] ;; second is map, so attrs present
+                                                                   [{} (rest pxv)]))  ;;; second is not map, so no attrs
+                                           content (vec (map trans-prxml-vect content))]
+                                       ;; emit an element
+                                       (dXml/element tag attrs content)))))))
+        attrs {}
+        contents (trans-prxml-vect (conj (:head res) (:sources res)))
+        CDAdescr (dXml/element :CDADescriptor attrs contents)]
+    (dXml/indent-str CDAdescr)))
 
 
 (defn addConnectionAux [ds contents tags]
@@ -496,8 +519,8 @@
 (defn exampleXml
   "example of generating xml using clojure.contrib.prxml"
   []
-  (binding [xml/*prxml-indent* 2]
-    (xml/prxml  [:decl!]
+  (binding [dXml/*prxml-indent* 2]
+    (dXml/prxml  [:decl!]
 	    [:DataAccess {:access "public"
 			  :cache "true" "cacheDuration" 3600
 			  :connection "genderDistrib"}

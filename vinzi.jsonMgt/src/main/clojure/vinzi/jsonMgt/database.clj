@@ -1,17 +1,15 @@
 (ns vinzi.jsonMgt.database
-    (:use	 [clojure pprint]
-           [clojure.tools logging]
-           [vinzi.jsonMgt globals])
-    (:use [vinzi.json.jsonZip :only [isJson?]]
-          [vinzi.json.jsonDiff :only [getPathList keywordize getPathStrPatch]])
-        ;;:only [Patch]
+  (:use	 [clojure pprint]
+         [clojure.tools logging]
+         [vinzi.jsonMgt globals]
+         [vinzi.json.jsonGlobals :only [getPathList keywordize getPathStrPatch isJson?]])
   (:require  [vinzi.jsonMgt [persistentstore :as ps]]
              [clojure.string :as str]
              [clojure.java
               [jdbc :as sql]]
              [clojure.data
               [json :as json]])
-        (:import [vinzi.json.jsonDiff Patch]
+  (:import [vinzi.json.jsonGlobals Patch]
                  [java.io File]
                  [java.util Date]
                  [java.sql SQLException Timestamp])
@@ -202,11 +200,11 @@
 
 ;; only used internally (called by 'call-with-database')
 (defn initScheme
-  "Initialize a scheme (or database) by creating the all five tables. 
+  "Initialize a scheme (or database) by creating all five tables. 
    The function only returns true if all five operations are succesfull. 
    An action-log entry is generated for each table, so the action-table is created first."
   []
-  (let [lpf "(initScheme): "]
+  (let [lpf "(database/initScheme): "]
     (letfn [(checkTable [tableName & tableSpecs]
                         (debug lpf "check table: " tableName) 
                         (if (existsTable? tableName)

@@ -13,7 +13,7 @@
             [vinzi.cdm
              [globals :as cgl]
              [jqueryFileTree :as jqft]])
-  (:import [java.sql.Date java.sql.TimeStamp]))
+  (:import [java.sql Date]))
 
 
   (def initialized? (atom false))

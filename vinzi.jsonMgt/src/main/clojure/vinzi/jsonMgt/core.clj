@@ -1,9 +1,10 @@
 (ns vinzi.jsonMgt.core
   (:use	   [clojure pprint]
-           [clojure.tools logging])
-  (:use [vinzi.jsonMgt globals persistentstore init-persistentstore]
-        [vinzi.json jsonZip jsonDiff jsonEdit]
-	 [clojure.pprint])
+           [clojure.tools logging]
+           [vinzi.jsonMgt globals persistentstore init-persistentstore]
+        [vinzi.json jsonZip jsonDiff jsonEdit
+         [jsonGlobals :only [isJson?]]]
+        [clojure.pprint])
   (:require  [clojure
 	      ;; zip only for debugging
 	      [zip :as zip]
@@ -15,7 +16,7 @@
       [vinzi.tools.vExcept :as vExcept]
       [vinzi.pentaho.genCda :as cda])
   (:import [java.sql SQLException]
-	   [vinzi.json.jsonDiff Patch]
+	   [vinzi.json.jsonGlobals Patch]
 	   [java.io File BufferedReader]))
 
 ;; usage of the next few lines should be replaced by vFile.

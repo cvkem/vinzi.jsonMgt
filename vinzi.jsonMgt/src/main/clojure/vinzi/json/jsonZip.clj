@@ -1,5 +1,6 @@
 (ns vinzi.json.jsonZip
-  (:use clojure.pprint)
+  (:use clojure.pprint
+        [vinzi.json [jsonGlobals :only [isJson?]]])
   (:require (clojure 
               [zip :as zip]
               [walk :as walk]
@@ -485,11 +486,6 @@ This function is only used for compound elements (collections) that will be inse
   (or (nil? zipper)
       (and (vector? zipper)
 	   (= 2 (count zipper)))))
-
-(defn isJson?
-  "Basic test to discriminate between json (string representation) and json-objects (hash-maps)."
-  [contents]
-  (= (str (type contents)) "class java.lang.String"))
 
 (defn jsonRoot
   "Extract the root of a jsonZipper and transform the resulting zipperTree to an in-memory json object."
