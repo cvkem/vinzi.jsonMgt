@@ -3,7 +3,9 @@
         clojure.pprint)
   (:require [clojure.string :as str]
             [clojure.java.jdbc :as sql]
-            [vinzi.tools [vExcept :as vExcept]]
+            [vinzi.tools 
+             [vExcept :as vExcept]
+             [vCsv :as vCsv]]
             [vinzi.pentaho 
              [connect :as pConn]]
             [vinzi.jsonMgt
@@ -77,10 +79,12 @@
  "Generate a command for jsonMgt based on action and the :src and :dst from the params.
   Further parameter-checking will be added."
   [params]
-  (let [get-param (fn [theKey] 
+  (let [lpf "(get-command-rec): "
+        get-param (fn [theKey] 
   					(let [par (get params theKey) 
         				  par (when par (str/split (str/trim par) #"\s+"))
         				  par (if (and (= (count par) 1) (= (first par) "")) '() par)]
+               (debug lpf "for key: " theKey " retrieved value: " par)
     					par))
   		action (str/lower-case (str/trim (:action params)))
 ;;      user   (str/trim (:user params))
@@ -94,12 +98,21 @@
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;    get html-tables for actions and for errors.
+;;    Out-dated code, which is replaced by the json-interface (see below)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 (def tblFmt "<table border=1>\n\t<tbody>%s\t</tbody>\n</table>")
 (def tblRowFmt "\t\t<tr>%s\t\t</tr>")
 (def tblHeadFmt "\t\t\t<th>%s</th>")
 (def tblDataFmt "\t\t\t<td>%s</td>")
 
-(defn generate-html-table [tbl]
+(defn generate-html-table 
+  "Generate a html-table element filled with the data of tbl 
+   (a list of lists with headerlines in the first row)."
+  [tbl]
   (letfn [(generateRow [fmt items]
 		       (println "genRow, fmt= " fmt " and items= " items)
 		       (flush)
@@ -141,9 +154,45 @@
     ))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;    Get CDA json-data for actions and for errors that correspond to the sources in params.
+;;    (Replaces the old-code that returned html-fragments.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+(defn get-recent-actionsErrors
+  "Generate a json-table showing the most recent actions/errors for sources."
+  [params action]
+  (let [lpf "(get-recent-actionsErrors): " 
+        cmd (get-command-rec {:action action
+                              :source (:source params)})
+        _ (debug lpf "going to execute command" cmd)
+        tbl (ps/ps_callWithConnection (partial jmgt/processCommand cmd))
+        _ (debug lpf " received: " tbl)
+        tbl (vCsv/csv-to-map tbl)]
+    (debug lpf " returning: " tbl)
+    tbl
+    ))
+
+(defn get-recent-actions
+  "Generate a json-table showing the most recent actions for sources."
+  [params]
+  (get-recent-actionsErrors params "list-actions"))
+
+(defn get-recent-errors
+  "Generate a json-table showing the most recent errors for sources."
+  [params]
+  (get-recent-actionsErrors params "list-errors"))
+
+
 
 ;; TODO: Add a locking mechanisme to prevent two users from simultaneously modifying the same dashboard/track
 ;; (should this locking be in jsonMgt.core or here?)
+(debug "TODO: Add a locking mechanisme to prevent two users from simultaneously modifying the same dashboard/track
+           (should this locking be in jsonMgt.core or here?)")
+
+
 
 (defn process-jsonMgt-command
   "Collect the relavant data and call the jsonMgt."
