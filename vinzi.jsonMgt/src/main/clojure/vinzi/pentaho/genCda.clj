@@ -319,17 +319,21 @@
 ;      (dXml/prxml  [:decl!] CDAdescr)))))
 
 (defn generateXML [res]
-  (let [trans-prxml-vect (fn trans-prxml-vect [pxv]
+  (let [lpf  "(genCda/generateXML): "
+        _  (debug lpf "res = " (with-out-str (pprint res)))
+        stringify (fn [x] 
+                    (if (keyword? x) (name x) x))
+        trans-prxml-vect (fn trans-prxml-vect [pxv]
                            ;; transforms a prxml-like vector structure as a 
                            ;; datastructure that can be used by clojure.data.xml
                            ;; (does not process special constructs as :decl! and :cdecl!
                            (if (not (sequential? pxv))
-                             (list pxv)  ;; return element wrapped as a list
+                             (list (stringify pxv))  ;; return element wrapped as a list
                                (let [head (first pxv)]
                                  (if (vector? head)
                                    (vec (map trans-prxml-vect pxv))
                                    (if (= (count pxv) 1)
-                                     pxv   ;; return element as is (does this options appear?
+                                     (map stringify pxv)   ;; return element as is (does this options appear?
                                      (let [tag head
                                            [attrs content] (let [attrs (second pxv)]
                                                                  (if (map? attrs)
@@ -341,6 +345,7 @@
         attrs {}
         contents (trans-prxml-vect (conj (:head res) (:sources res)))
         CDAdescr (dXml/element :CDADescriptor attrs contents)]
+    (debug lpf "CDAdescr = " (with-out-str (pprint CDAdescr)))
     (dXml/indent-str CDAdescr)))
 
 
