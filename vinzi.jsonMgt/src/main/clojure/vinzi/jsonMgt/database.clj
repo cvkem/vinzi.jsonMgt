@@ -312,19 +312,23 @@
 ;;  Functions to retrieve (get) data from the databases
 ;;
 
-(defn- getAllItems [table]
-  (let [query (format "SELECT * FROM %s" table)]
+(defn- getAllItems [table sqlSuffix]
+  (let [query (format "SELECT * FROM %s  %s " table sqlSuffix)]
     (sql/with-query-results res  [query]
       (doall res))))
 
 (defn db_getAllTracks []
-  (getAllItems (getTrackInfoDb)))
+  (getAllItems (getTrackInfoDb) ""))
+
+;; logSuffix is used to limit the logActions an logErrors to the N most recent ones.
+(def numLogEntries 15)
+(def logSuffix (str " ORDER BY datetime DESC LIMIT " numLogEntries " "))
 
 (defn db_getAllActions []
-  (getAllItems (getActionLogDb)))
+  (getAllItems (getActionLogDb) logSuffix))
 
 (defn db_getAllErrors []
-  (getAllItems (getErrorLogDb)))
+  (getAllItems (getErrorLogDb) logSuffix))
 
 
 

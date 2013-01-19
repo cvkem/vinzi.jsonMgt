@@ -69,7 +69,7 @@
 (def resourceConfig :resource)
 ;; default is the resourceConfig
 (def ^:dynamic configLoc resourceConfig)
-(defn setConfigLoc "set location to retrieve config (either 'homeConfig' or 'resouceConfig'."
+(defn setConfigLoc "set location to retrieve config (either 'homeConfig' or 'resourceConfig'."
   [loc]
   (assert (or (= loc homeConfig) (= loc resourceConfig)))
   (def configLoc loc))
@@ -174,7 +174,7 @@
     efn))
 
 (defn simplifyFSPath
-  "Shorten the path by extracting the doc_root."
+  "Shorten the path by extracting the doc_root (when present)."
   [fileName]
   (if (.startsWith fileName doc_root)
     (apply str (drop (count doc_root) fileName))
@@ -266,9 +266,10 @@
   "Expand 'pattern'  to a pattern that matches whole words only."
   [pattern]
   (let [pattern (str/replace pattern "*" ".*")
-	pattern (str/replace pattern "?" ".?")
-	pattern (str "^" pattern "$")]
-       (re-pattern pattern)))
+        pattern (str/replace pattern "?" ".?")
+        pattern (str "^" pattern "$")]
+    (re-pattern pattern)))
+
 
 (defn getExpandedTrackList
   ""
@@ -682,19 +683,27 @@
 	  (diffViewer trackName))))
 
 
+(defn showPatchesData
+  "Show the differences for one track (return clojure data-structures). If a sequential is passed it is assumed to contain a single trackName."
+  [trackName]
+  (let [trackName (if (sequential? trackName) (first trackName) trackName)
+        trackInfo (ps_getTrackInfo (get-track-name trackName))
+	  {:keys [patches]} (getPatchesFS trackInfo)]
+      patches))
+
+
 (defn showPatches
-  "Show the differences for one or more tracks"
+  "Show the differences for one or more tracks (print output to the terminal."
   [args]
   (doseq [trackName args]
-    (let [trackInfo         (ps_getTrackInfo (get-track-name trackName))
-	  {:keys [patches]} (getPatchesFS trackInfo)]
+    (let [patches (showPatchesData trackName)]
       (println (format "The difference from the last commit on track '%s' are:" trackName))
       ;; TODO:  replace by a doall
       (if (seq patches)
-	(doseq [patch patches]
-	  (print "  ")
-	  (pprint patch))
-	(println "   --- NONE ---")))))
+        (doseq [patch patches]
+          (print "  ")
+          (pprint patch))
+        (println "   --- NONE ---")))))
 
 
 
@@ -833,11 +842,12 @@
       '())))  ;; list is empty
 
 
-(defn listActions "Show the Actions for the trackes specified. If no tracks are specified all log-entries will be shown. The logentries will be sorted with most recent first"
+(defn listActions "Show the Actions for the trackes specified. If no tracks are specified all log-entries will be shown. The log-entries will be sorted with most recent first"
   [args]
+  ;; for web-interface generate-log-lines could be reduced to a sort only (line will be translated from list back to a map again).
   (generate-log-lines (ps_getAllActions) args))
 
-(defn listErrors "Show the Actions for the trackes specified. If no tracks are specified all log-entries will be shown. The logentries will be sorted with most recent first"
+(defn listErrors "Show the Actions for the trackes specified. If no tracks are specified all log-entries will be shown. The log-entries will be sorted with most recent first"
   [args]
   (generate-log-lines (ps_getAllErrors) args))
 
@@ -871,7 +881,7 @@
       " 8. revert-to-commit:  revert the files on disk to the last committed version (overwrites file-system)"
       " 9. drop-last-commit: delete the last committed version (leaves file-system unchanged)"
       " 10. checkout-copy-last: Checkout a copy of a track under name 'trackName_last.cdfde' (does not create new track)"
-      " 11. exit: exit cdfdeMgt"
+      " 11. exit: Close the cdm/jsonMgt and exit"
       "Type help <command> to get more information about a command"
       ])
 
@@ -910,6 +920,7 @@
       "create" createTracks
       "commit" commitVersion
       "diff"   showPatches
+      "diffjson" showPatchesData
       "diffviewer" diffViewers
       "help"   showHelp
       "dirty"  showDirty
@@ -927,6 +938,7 @@
 (def commandMaxSrcMap
      {
       "diffviewer" 1
+      "diffjson" 1   ;; a variant that accepts only one source and returns a json-structure
       "help"   1
       "apply"  1
       "clean-copy"   1

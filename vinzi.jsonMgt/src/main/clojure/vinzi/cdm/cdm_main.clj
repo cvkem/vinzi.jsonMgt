@@ -2,6 +2,7 @@
   (:use clojure.tools.logging
         clojure.pprint)
   (:require [clojure.string :as str]
+            [clojure.data.json :as json]
             [clojure.java.jdbc :as sql]
             [vinzi.tools 
              [vExcept :as vExcept]
@@ -159,7 +160,8 @@
 ;;    (Replaces the old-code that returned html-fragments.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+(def list-actions "list-actions")
+(def list-errors "list-errors")
 
 (defn get-recent-actionsErrors
   "Generate a json-table showing the most recent actions/errors for sources."
@@ -170,7 +172,12 @@
         _ (debug lpf "going to execute command" cmd)
         tbl (ps/ps_callWithConnection (partial jmgt/processCommand cmd))
         _ (debug lpf " received: " tbl)
-        tbl (vCsv/csv-to-map tbl)]
+        tbl (if (seq tbl)
+              (vCsv/csv-to-map tbl)
+              ;; if list is empty, then return empty data:
+              (if (= action list-actions)
+                {:id "-" :track "-" :action "-" :datetime "-" :d_user "-"}
+                {:id "-" :track "-" :command "-" :datetime "-" :d_user "-" :error "-"}))]
     (debug lpf " returning: " tbl)
     tbl
     ))
@@ -178,14 +185,52 @@
 (defn get-recent-actions
   "Generate a json-table showing the most recent actions for sources."
   [params]
-  (get-recent-actionsErrors params "list-actions"))
+  (get-recent-actionsErrors params list-actions))
 
 (defn get-recent-errors
   "Generate a json-table showing the most recent errors for sources."
   [params]
-  (get-recent-actionsErrors params "list-errors"))
+  (get-recent-actionsErrors params list-errors))
 
 
+(defn get-differences
+  "Generate a json-table representing the differences."
+  [params]
+  (let [lpf "(get-differences): " 
+        source (:source params)
+        cmd (get-command-rec {:action "diffjson"
+                              :source source})
+        _ (debug lpf "going to execute command" cmd)
+        get-diffs (fn [cmd]
+                    (let [tbl (ps/ps_callWithConnection (partial jmgt/processCommand cmd))
+                          buildPath (fn [patch]
+                                      (->> patch
+                                        (:pathList)
+                                        (rest)
+                                        (map name)
+                                        (str/join "/")
+                                        (assoc patch :path)
+                                        (#(dissoc % :pathList))))
+                          stringValue (fn [patch]
+                                        (assoc patch :value (json/json-str (:value patch))))]
+                      (debug lpf " received: " tbl)
+                      (->> tbl
+                        (map buildPath)
+                        (map stringValue)
+                        (sort-by :path))))
+        tbl (if (re-find #"\*" source)
+              {:path "-" :key "-" :value "-" :action (str "No data for source: " source)}    ;; if a mask or "*" is provide then return an empty list
+              (get-diffs cmd))]
+    (debug lpf " returning: " tbl)
+    tbl))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;    Get CDA json-data for actions and for errors that correspond to the sources in params.
+;;    (Replaces the old-code that returned html-fragments.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Add a locking mechanisme to prevent two users from simultaneously modifying the same dashboard/track
 ;; (should this locking be in jsonMgt.core or here?)
