@@ -168,16 +168,26 @@
 (defn db_writeErrorEntry
   [errorEntry]
   (let [errorEntry (if (nil? (:id errorEntry))
-                     (dissoc errorEntry :id)
+                     (let [ks (remove #(= % :id) (keys errorEntry))
+                            pruned (zipmap ks (map #(get errorEntry %) ks))]
+                     ;;(dissoc errorEntry :id)
+                       pruned)
                      (errorEntry))]
         (sql/insert-records (getErrorLogDb) errorEntry)
         true))
 
 (defn db_writeActionEntry
   [actionEntry]
+  (info "_tmp_ Write actionEntry: " actionEntry)
   (let [actionEntry (if (nil? (:id actionEntry))
-                      (dissoc actionEntry :id)
+                      (let [ks (remove #(= % :id) (keys actionEntry))
+                            pruned (zipmap ks (map #(get actionEntry %) ks))]
+                        (info "_tmp_ going to dissoc id from actionEntry of type" (type actionEntry) " with keys: " (keys actionEntry))
+                        ;(dissoc actionEntry :id)   ;; dissoc from actionEntry fails
+                        pruned
+                        )
                       actionEntry)]
+    (info "_tmp_ changed actionEntry to: " actionEntry)
     (sql/insert-records (getActionLogDb) actionEntry)
     true))
 

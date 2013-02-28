@@ -6,7 +6,7 @@
 ;; both should be able to compile independently, so this definition is duplicated in both jars.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;   globals of vinzi.json.jsonZip
+;;   globals that originate from vinzi.json.jsonZip
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn isJson?
@@ -16,7 +16,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;   globals of vinzi.json.jsonDiff
+;;   globals that originate from vinzi.json.jsonDiff
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -48,7 +48,7 @@
 (defn getPathStrPatch
   "Get a string representation of the path list of the patch."
   [patch]
- {:pre [(= (str (type patch)) "class vinzi.json.jsonGlobals.Patch")]} 
+ {:pre [(= (type patch) vinzi.json.jsonGlobals.Patch)]} 
  (let [pList  (:pathList patch)
 	head   (first pList)]
     (if (and (= head "") (<= (count pList) 1))
