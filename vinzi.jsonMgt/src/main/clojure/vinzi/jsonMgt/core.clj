@@ -430,8 +430,9 @@
   ([trackInfo contents obj]
     (write-version-FS trackInfo contents obj nil))
   ([trackInfo contents obj newName]
-  {:pre [(map? trackInfo) (isJson? contents)]}
-  (let [{filename :file_location} trackInfo
+  {:pre [(map? trackInfo) (isJson? contents)]}  ;; indirectly tests 3-ary function too.
+  (let [lpf "(write-version-FS): "
+        {filename :file_location} trackInfo
         filename (if (string? newName)
                    (replace-filename filename newName)
                    filename)
@@ -440,7 +441,7 @@
         cdaFile  (deriveCdaFilename filename)
         wcdf     (generate-wcdf filename)
         wcdfFile (derive-wcdf-filename filename)]
-    
+    (info lpf "Writing a version to filename: " filename)
     ;	(str (apply str (take (- (count filename) 5) filename)) "cda")]
     (spit filename contents)
     (spit cdaFile  cda)
@@ -773,10 +774,11 @@
   (doseq [trackName args]
     (let [lpf "(revertToCommit): "
           track (get-track-name trackName)
+          trackInfo  (ps_getTrackInfo track)
           dt (getCurrDateTime)]
       (if (confirmReader (format "Overwite the files in the filesystem for track '%s'?" track))
         (if-let [{:keys [json obj]} (getCommit track)]
-          (if (write-version-FS track json obj)
+          (if (write-version-FS trackInfo json obj)
             (writeActionEntry track dt
                               (format "Checked-out version of '%s' to file-system" track))
             (addMessage track "Failed to check-out the new version to the file-system"))
@@ -803,7 +805,9 @@
           cdt (getCurrDateTime)]
       (if (confirmReader (format "Drop last commit of '%s'?" track))
         (if-let [trackInfo (ps_getTrackInfo track)]
-          (let [{:keys [track_id dt]} trackInfo
+          (let [{:keys [track_id]} trackInfo
+                dt  (:datetime (ps_getCommit track_id 0))
+                _  (when (nil? dt) (vExcept/throw-except lpf "the retrieved time of track " trackInfo " is invalid. date-time =" dt))
                 droppedPatches (ps_dropLastCommit track_id dt)]
             (writeActionEntry track cdt
                               (format "Dropped commit of date '%s' from  '%s' from the database (consisting of %s patches)"  dt track droppedPatches))
