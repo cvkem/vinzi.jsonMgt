@@ -100,7 +100,7 @@
 		<dependency>
 			<groupId>org.clojure</groupId>
 			<artifactId>data.json</artifactId>
-			<version>0.1.3</version>
+			<version>0.2.1</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

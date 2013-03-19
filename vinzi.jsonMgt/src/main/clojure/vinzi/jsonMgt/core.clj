@@ -271,29 +271,48 @@
     (re-pattern pattern)))
 
 
+ (defn- expandTrackOrFile
+   "Expand a track or file. When failOnNonExist is true an exception will be thrown when item 'tr' can not be expanded, otherwise it will fail silently."
+   [allTracks failOnNonExist tr]
+   ;; TODO: recognize c:\... as a filename
+   (let [lpf "(expandTrackOrFile): "
+         findMatches   (fn [tr column]
+                         ;; create tuples with 'column' as first field and :track_name as second
+                         (let [pat (wholeWordRegexp tr)
+                               tuples (map (fn [x] [(column x) (:track_name x) ]) allTracks)
+                               res (filter #(not (zero? (count (re-find pat (first %))))) tuples)]
+                           (map second res)))] 
+     (if (isFilename? tr) ;; it is a filename
+       (let [tr  (simplifyFSPath (extendFSPath tr))
+             res (findMatches tr :file_location)]
+         (if (zero? (count res))
+           (when failOnNonExist 
+             (addMessage "--" "Could not find file(s) '%s'", tr))
+           res))
+       (let [res (findMatches tr :track_name)]
+         (if (zero? (count res))
+           (when failOnNonExist
+             (addMessage "--" "Could not find track(s) '%s'", tr))
+           res)))))
+
 (defn getExpandedTrackList
-  ""
+  "Takes a list of names and expands them "
   [trackList]
+  {:pre [(sequential? trackList)]}
   (let [lpf "(getExpandedTrackList): "
         allTracks (ps_getAllTracks)
-        findMatches   (fn [tr column]
-                        ;; create tuples with 'column' as first field and :track_name as second
-                        (let [pat (wholeWordRegexp tr)
-                              tuples (map (fn [x] [(column x) (:track_name x) ]) allTracks)
-                              res (filter #(not (zero? (count (re-find pat (first %))))) tuples)]
-                          (map second res)))
-        expandTrackOrFile (fn [tr]
-                            ;; TODO: recognize c:\... as a filename
-                            (if (isFilename? tr) ;; it is a filename
-                              (let [tr  (simplifyFSPath (extendFSPath tr))
-                                    res (findMatches tr :file_location)]
-                                (if (zero? (count res))
-                                  (addMessage "--" "Could not find file(s) '%s'", tr)
-                                  res))
-                              (let [res (findMatches tr :track_name)]
-                                (if (zero? (count res))
-                                  (addMessage "--" "Could not find track(s) '%s'", tr)
-                                  res))))
+;        expandTrackOrFile (fn [tr]
+;                            ;; TODO: recognize c:\... as a filename
+;                            (if (isFilename? tr) ;; it is a filename
+;                              (let [tr  (simplifyFSPath (extendFSPath tr))
+;                                    res (findMatches tr :file_location)]
+;                                (if (zero? (count res))
+;                                  (addMessage "--" "Could not find file(s) '%s'", tr)
+;                                  res))
+;                              (let [res (findMatches tr :track_name)]
+;                                (if (zero? (count res))
+;                                  (addMessage "--" "Could not find track(s) '%s'", tr)
+;                                  res))))
         removeDuplic (fn [cumm tracks]
                        (if (seq tracks)
                          (let [track (first tracks)
@@ -302,11 +321,22 @@
                          cumm))
         ]
     (->> trackList
-      (map expandTrackOrFile)
+      (map (partial expandTrackOrFile allTracks true))
+      (remove nil?)
       (reduce removeDuplic []))))
 
-
-
+(defn trackFileExists
+  "Check whether the file or track tr exists."
+  [tr]
+  {:pre [(string? tr)]}
+  (let [lpf "(trackFileExists): "
+        allTracks (ps_getAllTracks)
+        etr (expandTrackOrFile allTracks false tr)]
+    (info lpf  tr  " expanded to: " etr)
+    (if etr
+      true
+      false)))
+  
 
 (defn getTrackFilePath
   " Get the path in the file-system that corresponds to trackName (should be only one track)"

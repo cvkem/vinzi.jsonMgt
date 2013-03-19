@@ -104,7 +104,12 @@
 
 (declare initScheme)
 
-(defn db_call-with-connection [f & args]
+(defn db_call-with-connection 
+  "First argument is a function that will be called with an open database connection.
+   So do not pass a form, as it will be evaluated before the connection is opened ! 
+   (this can not be a macro as it will be bound at runtime.)." 
+  [f & args]
+  {:pre [(fn? f)]}
   (let [lpf "(call-with-connection): "]
     (sql/with-connection db
                          (if (initScheme)

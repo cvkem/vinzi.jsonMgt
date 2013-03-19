@@ -281,4 +281,15 @@
                         (glb/set-override-username nil))))))
   
 
+(defn trackExists
+  "Check whether a track/file already exists in the CDM." 
+  [params]
+  (let [trackFile (:source params)]  ;; getExpandedTrackList expects a list argument
+    (ps/ps_callWithConnection
+    ;; wrap in function to delay execution
+    (fn [] 
+      (jmgt/trackFileExists trackFile)))))
+
+
+
 

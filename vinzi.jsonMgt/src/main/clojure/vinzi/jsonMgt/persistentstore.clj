@@ -14,6 +14,9 @@
 
 (def ^:dynamic ps_callWithConnection (fn [f & args] (println "wrapper not installed")))
 ;; signature: [f & args]
+;   First argument is a function that will be called with an open database connection.
+;   So do not pass a form, as it will be evaluated before the connection is opened ! 
+;   (this can not be a macro as it will be bound at runtime.). 
 
 (def ^:dynamic ps_writeErrorEntry)
 ;; signature: [errorEntry]
