@@ -886,9 +886,50 @@
   (generate-log-lines (ps_getAllErrors) args))
 
 
-(def introMessage "Community Dashboard Manager v0.9 for the synchroneous management of Pentaho cdfde dashboards\n developed by Vinzi.nl (2011-2012).\n Type help to get a general introduction.") 
+(def webIntroMessage (str "Community Dashboard Manager v0.9 for the synchroneous management of Pentaho cdfde dashboards\n\t developed by Vinzi.nl (2011-2013).\n"
+                       ;; excluded in webinterface
+          ;;         "\tType help to get a general introduction.\n"
+                   )) 
 
-(def helpMessages
+(def webHelpMessages
+     {
+      "Apply changes"  "Usage: apply <source_track>  <dst_track>  [depth]\nApplies all patches made on the source-track to the destination track. The 'depth' gives the number of commits that will be applied. A 'depth' 0 corresponds to the last commit, a 'depth' of 1 corresponds to the changes of the last two commits.\nIf the destination has non-committed changes you can't do an apply (you either have to commit the changes on the destination or revert to the last commit before you can apply patches.)."
+      "Create track" "Usage: create <file-name>\nThe 'file-name' should be a path relative to the current location in the file-system or a full path. This command creates a track-table (full version of the fill) and a patch-table (incremental changes) for the track. The full path-name is stored. Such that you can refer to the track using the base of the file-name during subsequent operations. The current version of .cdfde file is used to make the initial commit to the track-table."
+      "Commit track" "Usage: commit <track> ....\nThe full file-path of 'track' is looked up and the file is committed to the database. A full copy of the file is stored in the 'track-table'. The patches required to synchronize the last commit version with the new version are computed. These patches are stored in the 'patch-table' of this track."
+      "Duplicate track"  "Usage: copy-track <source_track> <destination file>\nCreate a copy of the src-track at location 'dstPath'. This function create for the destination (a) a track-table containing the last commit of srcTrack (b) the .cdfde and .cda files at the given location (c) an empty patch-table for this track."
+      "Checkout-copy"  "Usage: checkout-copy-last <source_track>\nCreate a copy of the src-track in the same folder, but having name  'trackName_last'. (Does not create a new track in the CDM for the checked-out copy.)"
+      "Differences" "Usage: diff <track> ....\nThis will show the series of patches that is needed to synchronize the last committed version (database) with the version in the file-system."
+      "Show dirty" "Usage: dirty [track] ....\nFor each of the tracks it is determined flags  whether the last committed version (database) corresponds to the version in de file-system (match) or that it is dirty (changed). If no arguments are passed a listing of the dirty-status of all tracks is shown."
+      "Revert-to-commit" "Usage: revert-to-commit <track>\nThe last committed version is extracted and used to overwrite the current .cdfde file and .cda file in the file-system. Beware: non-committed changes will get lost."
+      "Drop-last-commit" "Usage: drop-last-commit <track>\nThe last commit is dropped from the track-table and from the patch-table of this track. If the initial commit of a track is dropped the track will be completely removed from the system."
+}) 
+
+
+(def webGeneralHelp
+     ["The valid commands are:"
+      " ----------------------------- Track specific commands  -----------------------------------------------------"
+      " 1. Create Track: create a track for the dashboard (cdfde-file)"
+      " 2. Commit Track: commits the current file-system version to a cdm-track"
+      " 3. Differences: show the differences for a track between the last committed version and the current file"
+      " 4. Revert to commit:  revert the files on disk to the last committed version (overwrites file-system)"
+      " 5. Drop last commit: delete the last committed version (leaves file-system unchanged)"
+      " 6. Actions & Errors: Shows the most recent actions and errors for this track."
+      " ----------------------------- Commands involving multiple tracks  ------------------------------------------"
+      " 7. Duplicate track: create a clean copy of the track with a new track-name (and stores it in the cdm-system)"
+      " 8. Apply changes: applies all modifications from the last commit of track A to track B"
+      " 9. Show dirty: shows all tracks that have been changed since the last commit"
+      " 10. Checkout-copy: Checkout a copy of a track under name 'trackName_last.cdfde' (does not create new track)"
+   ;; last two only lines are exluded in the web-interface
+  ;;    " 11. exit: Close the cdm/jsonMgt and exit"
+  ;;    "Type help <command> to get more information about a command"
+      ])
+
+(def clIntroMessage (str "Community Dashboard Manager v0.9 for the synchroneous management of Pentaho cdfde dashboards\n developed by Vinzi.nl (2011-2013).\n"
+                   "\tType help to get a general introduction.\n"
+                   )) 
+
+
+(def clHelpMessages
      {
       "apply"  "Usage: apply <source_track>  <dst_track>  [depth]\nApplies all patches made on the source-track to the destination track. The 'depth' gives the number of commits that will be applied. A 'depth' 0 corresponds to the last commit, a 'depth' of 1 corresponds to the changes of the last two commits.\nIf the destination has non-committed changes you can't do an apply (you either have to commit the changes on the destination or revert to the last commit before you can apply patches.)."
       "create" "Usage: create <file-name>\nThe 'file-name' should be a path relative to the current location in the file-system or a full path. This command creates a track-table (full version of the fill) and a patch-table (incremental changes) for the track. The full path-name is stored. Such that you can refer to the track using the base of the file-name during subsequent operations. The current version of .cdfde file is used to make the initial commit to the track-table."
@@ -903,7 +944,7 @@
 }) 
 
 
-(def generalHelp
+(def clGeneralHelp
      ["The valid commands are:"
       " 1. create: create a track for the dashboard (cdfde-file)"
       " 2. commit: commits the current file-system version to a cdm-track"
@@ -918,6 +959,19 @@
       " 11. exit: Close the cdm/jsonMgt and exit"
       "Type help <command> to get more information about a command"
       ])
+
+  (def ^:dynamic generalHelp clGeneralHelp)
+  (def ^:dynamic introMessage clIntroMessage)
+  (def ^:dynamic helpMessages clHelpMessages)
+
+(defn switch-cmd-interface 
+  "Switch to set of messages for command-line interface."
+  []
+  (def generalHelp clGeneralHelp)
+  (def introMessage clIntroMessage)
+  (def helpMessages clHelpMessages)
+  )
+
 
 (defn applyPatches [args]
   (if (and (>= (count args) 2)  (<= (count args) 3))

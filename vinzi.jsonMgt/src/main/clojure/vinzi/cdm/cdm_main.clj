@@ -240,7 +240,7 @@
 
 
 (defn process-jsonMgt-command
-  "Collect the relavant data and call the jsonMgt."
+  "Collect the relevant data and call the jsonMgt."
   [params]
   (initialize)
   (let [lpf "(process-jsonMgt-command): "
@@ -260,8 +260,11 @@
                               response (if (or (nil? response)
                                                (= response "")
                                                (not (jmgt/returnTextOutput command)))
-                                         (str "Succesfull performed command "
-                                              commandRec)
+                                         (str  "Success: " \' (:command commandRec) \' 
+                                                     (when-let [src (seq (:src commandRec))] (str " on source " (str/join "," src)))
+                                                     (when-let [dst (seq (:dst commandRec))] (str "\n\t and dest " (str/join "," dst)))
+                                                     (when-let [msg (seq (:msg commandRec))] (str "\n\t with messages " (str/join "," msg)))
+                                                     )
                                          response)]
                           (doall response))))
             (procHelp []
