@@ -109,7 +109,7 @@
 (defn addParam
   "Add the value field as param-tag to using key 'k' for later usage. The parameter is transformed to a json-object. (Parameters are stored as a vector)"
   [k xml node]
-  (let [value (json/read-json (getNodeVal node :value))
+  (let [value (json/read-str (getNodeVal node :value) :key-fn keyword)
         pars   (conj (:params xml) value)
         res (assoc xml :params  pars)]
     res))
@@ -118,7 +118,7 @@
   "Add the value field as param-tag to using key 'k' for later usage. The parameter is transformed to a json-object. (Parameters are stored as a vector)"
   [k xml node itemTag]
   (let [nodeVal (getNodeVal node :value)
-        values (json/read-json nodeVal)]
+        values (json/read-str nodeVal :key-fn keyword)]
     (loop [vs values
            cumm [] ]
       (if (seq vs)
@@ -390,7 +390,7 @@
 
 (defn addOutput [ds tags]
   (if-let [output (:Output tags)]
-    (if-let [val (json/read-json output)]
+    (if-let [val (json/read-str output :key-fn keyword)]
       (if (> (count val) 0)
         (let [val        (apply str (interpose "," val))
               param      {:indexes val}
@@ -513,7 +513,7 @@
 	filename "/home/cees/tmp/pentaho-solutions/kettle-cda/Dashboard5.cdfde"
 	]
   (with-open [f (io/reader filename)]
-    (let [js  (json/read-json f)
+    (let [js  (json/read f :key-fn keyword)
 	  cdfde (jsonZipper js)]
       (if cdfde
 	(let [res (generateCdaTest cdfde)]
@@ -543,7 +543,7 @@
 
   
   (with-open [f (io/reader "../cdfdeMgt/data/EIS.cdfde")]
-    (let [js  (json/read-json f)
+    (let [js  (json/read f :key-fn keyword)
 	  cdfde (jsonZipper js)]
       (def x cdfde)))
 

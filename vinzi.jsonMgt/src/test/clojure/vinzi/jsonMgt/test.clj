@@ -68,16 +68,16 @@
   (with-open [o2 (io/writer orgFile)
 	      t1 (io/writer target1File)
 	      t2 (io/writer target2File)]
-    (spit o2 (json/json-str orgData))
-    (spit t1 (json/json-str target1))
-    (spit t2 (json/json-str target2))
+    (spit o2 (json/write-str orgData))
+    (spit t1 (json/write-str target1))
+    (spit t2 (json/write-str target2))
     ))
 
 (defn replaceOrgFile
   "replace file with modified version."
   []
   (with-open [o2 (io/writer orgFile)]
-    (spit o2 (json/json-str modData)))
+    (spit o2 (json/write-str modData)))
   true)  ;; return true to include it in test
 
 (defn dropTable [name]

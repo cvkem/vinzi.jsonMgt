@@ -121,7 +121,7 @@
         (addMsg (str "Trying to open: " configFile))
         (with-open [file (io/reader configFile)]
           (addMsg "  ...File opened, going to read json")
-          (let [cfg (json/read-json file)]
+          (let [cfg (json/read file :key-fn keyword)]
             (addMsg "  ... Checking debug-flag")
             (if (:debug cfg)
               (do
@@ -372,7 +372,7 @@
 (defn getJsonRepr
   "Function to translate an object to the (desired) json-representations"
   [jsonObj]
-  (json/json-str jsonObj))
+  (json/write-str jsonObj))
 
 
 (defn getCommit
@@ -388,7 +388,7 @@
          (let [trackName (:track_name trackInfo)]
            (if-let [res (ps_getCommit (:track_id trackInfo) depth)]
              (let [json  (:contents res)
-                   obj   (json/read-json json)]
+                   obj   (json/read-str json :key-fn keyword)]
                (assoc trackInfo :obj obj  :json json  :datetime (:datetime res)))
              (addMessage trackName "ERROR: Could not retrieve track at depth %s." depth)))
          (addMessage (str trackNI) "ERROR: could not retrieve track-info.")))))
@@ -406,7 +406,7 @@
   [reader]
   (let [lpf "(checkJsonFSValid): "]
     (try
-      (json/read-json reader)
+      (json/read reader :key-fn keyword)
       (catch Exception e
 ;;        true
 ;;        (do
@@ -419,7 +419,7 @@
   [f]
   (let [lpf "(readJsonFS): "
         nJson (fn [reader]
-                (let [obj        (json/read-json reader)
+                (let [obj        (json/read reader :key-fn keyword)
                       normJson   (getJsonRepr obj)]
                   {:normJson  normJson
                    :obj       obj}))]
@@ -436,13 +436,6 @@
         nil))))
 
 
-;; (defn getNormalizedJsonFile
-;;   "Get a normalized version of the json-file from the file-system."
-;;   [file]
-;;   (let [fileVersion  (with-open [r (io/reader file)]
-;; 		       (json/read-json r))
-;; 	normJson  (json/json-str fileVersion)]
-;;     normJson))
 
 (defn generate-wcdf [fileName]
   (let [fName (get-filename fileName)

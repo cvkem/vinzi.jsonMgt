@@ -132,7 +132,7 @@
         pathList (getPathList path)
         act      (keyword action)
         pKey     (keywordize patchkey)
-        val      (json/read-json value) ]
+        val      (json/read-str value :key-fn keyword) ]
     (Patch. pathList act pKey val)))
 
 
@@ -144,7 +144,7 @@
      :path   (getPathStrPatch patch)
      :action (name (:action patch))
      :patchkey    (str (:key patch))
-     :value  (json/json-str (:value patch))} )
+     :value  (json/write-str (:value patch))} )
 
 
 

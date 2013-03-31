@@ -177,7 +177,7 @@
   "Opens the file 'name' and shows the json-contents in the viewer."
   [name]
   (with-open [r  (reader name)]
-    (let [json (json/read-json r)]
+    (let [json (json/read r :key-fn keyword)]
       (jsonViewer json))))
 
 

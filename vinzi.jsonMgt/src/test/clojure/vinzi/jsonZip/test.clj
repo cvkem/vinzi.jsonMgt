@@ -175,7 +175,7 @@
 
 
 (def largeJson (with-open [data (io/reader "./test-data/EIS-poc.cdfde")]
-		 (json/read-json data)))
+		 (json/read data :key-fn keyword)))
 
 ;;;;;;;;;;;;
 ;;   test 3   transform a large json file to a zipper and translate it it back.
