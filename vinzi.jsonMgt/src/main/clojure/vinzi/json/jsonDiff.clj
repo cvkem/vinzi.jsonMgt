@@ -339,7 +339,7 @@
                                (if2 (not= orgId modId)
                                     (patchErr (format (str "The origin uses vector-id %s "
                                                            "and the modified version uses %s.\n"
-                                                           "Can not process this substree !!" orgId modId)))
+                                                           "Can not process this substree !!") orgId modId))
                                     (if2 orgId
                                          (getPatchesChildren org mod p pl)
                                          (let [_   (or (assert (= (jsonType org) jsonTypeVector))

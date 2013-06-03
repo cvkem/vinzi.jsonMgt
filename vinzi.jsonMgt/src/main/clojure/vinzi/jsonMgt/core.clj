@@ -1016,6 +1016,7 @@
 
 (def returnTextOutput #{  "diff" "help" "dirty" "list-actions" "list-errors"})
 
+;; for these commands there should be at most 1 source-file.
 (def commandMaxSrcMap
      {
       "diffviewer" 1
@@ -1026,6 +1027,7 @@
       "checkout-copy-last" 1
       })
 
+;; for these commands there is no extension of the source, so the file-names should not contain wild-cards
 (def dontExpandComm #{ "create"  "clean-copy" "checkout-copy-last" "help" "list-errors" "list-actions"})
 
 
